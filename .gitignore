@@ -127,3 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+data/data_mRNA_median_all_sample_Zscores.txt
+data/brca_metabric.tar.gz
