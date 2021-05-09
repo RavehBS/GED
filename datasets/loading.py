@@ -1,7 +1,7 @@
 """Dataset loading."""
 
 import os
-
+import pandas as pd
 import numpy as np
 
 UCI_DATASETS = [
@@ -10,6 +10,9 @@ UCI_DATASETS = [
     "iris",
 ]
 
+HYPBC_DATASETS = [
+    "bc"
+]
 
 def load_data(dataset, normalize=True):
     """Load dataset.
@@ -23,6 +26,8 @@ def load_data(dataset, normalize=True):
     """
     if dataset in UCI_DATASETS:
         x, y = load_uci_data(dataset)
+    elif dataset in HYPBC_DATASETS:
+        x,y = load_hypbc()
     else:
         raise NotImplementedError("Unknown dataset {}.".format(dataset))
     if normalize:
@@ -72,3 +77,21 @@ def load_uci_data(dataset):
     std = x.std(0)
     x = (x - mean) / std
     return x, y
+
+def load_hypbc(normalize = "none"):
+    data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/data_mrna.txt")
+    df = pd.read_csv(data_path, sep = "\t", header = 0)
+    print(df.shape)
+    print(df.loc[0:5, :])
+    df.dropna(axis = 0, inplace=True, how = "any")
+    df["variance"] = df.var(axis = 1, numeric_only=True)
+    df["min"] = df.min(axis=1, numeric_only=True)
+    df["max"] = df.max(axis=1, numeric_only=True)
+    df["mean"] = df.mean(axis=1, numeric_only=True)
+    df.sort_values(by=["variance"],ascending=False,inplace=True)
+    print(df.shape)
+    #print(df.iloc[0:100, ["variance","min","max"]])
+    print(pd.concat([df.loc[:,["Hugo_Symbol","Entrez_Gene_Id"]],df.loc[:,"variance":"mean"]],axis=1).iloc[0:5])
+    df[0:5].to_csv(data_path[:-4]+'.result.csv')
+if __name__ == "__main__":
+    load_hypbc(normalize = "none")
