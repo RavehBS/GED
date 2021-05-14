@@ -2,6 +2,7 @@
 
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 
 UCI_DATASETS = [
@@ -78,20 +79,42 @@ def load_uci_data(dataset):
     x = (x - mean) / std
     return x, y
 
-def load_hypbc(normalize = "none"):
-    data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/data_mrna.txt")
-    df = pd.read_csv(data_path, sep = "\t", header = 0)
-    print(df.shape)
-    print(df.loc[0:5, :])
-    df.dropna(axis = 0, inplace=True, how = "any")
-    df["variance"] = df.var(axis = 1, numeric_only=True)
-    df["min"] = df.min(axis=1, numeric_only=True)
-    df["max"] = df.max(axis=1, numeric_only=True)
-    df["mean"] = df.mean(axis=1, numeric_only=True)
-    df.sort_values(by=["variance"],ascending=False,inplace=True)
-    print(df.shape)
-    #print(df.iloc[0:100, ["variance","min","max"]])
-    print(pd.concat([df.loc[:,["Hugo_Symbol","Entrez_Gene_Id"]],df.loc[:,"variance":"mean"]],axis=1).iloc[0:5])
-    df[0:5].to_csv(data_path[:-4]+'.result.csv')
+def load_hypbc(type="all",normalize = "none",visualize=False):
+    if type == "all":
+        data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/data_mrna_all.txt")
+    elif type == "partial":
+        data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/data_mrna.txt")
+    else:
+        print("bad type, use: \"partial\" or \"all\"")
+        return
+    #read csv
+    df = pd.read_csv(data_path, sep="\t", header=0)
+    df.dropna(axis=0, inplace=True, how="any")
+    df.drop(axis=1, inplace=True, labels="Entrez_Gene_Id")
+    if visualize:
+        #add more information
+        df["variance"] = df.var(axis = 1, numeric_only=True)
+        df["min"] = df.min(axis=1, numeric_only=True)
+        df["max"] = df.max(axis=1, numeric_only=True)
+        df["mean"] = df.mean(axis=1, numeric_only=True)
+        df.sort_values(by=["variance"],ascending=False,inplace=True)
+
+        #see some samples and shape
+        print(df.shape)
+        print(df.loc[0:5, :])
+
+        #plot
+        fig, axes = plt.subplots(nrows=1, ncols=5)
+        fig.suptitle("5 most variant genes")
+        fig.tight_layout()
+        for i in range(5):
+            cur_frame = df.iloc[i,:]
+            var = cur_frame["variance"]
+            mean = cur_frame["mean"]
+            cur_frame = cur_frame.drop(labels=["Hugo_Symbol","min","max","mean","variance"])
+            axes[i].hist(cur_frame, bins=50)
+            axes[i].set_title('mean,var=({:.2f},{:.2f})'.format(mean, var),fontsize=8)
+
+    return df
 if __name__ == "__main__":
-    load_hypbc(normalize = "none")
+    data = load_hypbc(type="partial",normalize = "none",visualize=True)
