@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.spatial as sp
 
 UCI_DATASETS = [
     "glass",
@@ -79,7 +80,7 @@ def load_uci_data(dataset):
     x = (x - mean) / std
     return x, y
 
-def load_hypbc(type="all",normalize = "none",visualize=False):
+def load_hypbc_data(type="all",normalize = "none",visualize=False):
     if type == "all":
         data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/data_mrna_all.txt")
     elif type == "partial":
@@ -87,17 +88,24 @@ def load_hypbc(type="all",normalize = "none",visualize=False):
     else:
         print("bad type, use: \"partial\" or \"all\"")
         return
-    #read csv
+    clinical_data_path = os.path.join(os.environ["DATAPATH"],"breast_cancer/clinical_data.txt")
+
+    #read data csv
     df = pd.read_csv(data_path, sep="\t", header=0)
     df.dropna(axis=0, inplace=True, how="any")
     df.drop(axis=1, inplace=True, labels="Entrez_Gene_Id")
+
+    #sort features by variance
+    df["variance"] = df.var(axis=1, numeric_only=True)
+    df.sort_values(by=["variance"], ascending=False, inplace=True)
+
     if visualize:
         #add more information
-        df["variance"] = df.var(axis = 1, numeric_only=True)
+
         df["min"] = df.min(axis=1, numeric_only=True)
         df["max"] = df.max(axis=1, numeric_only=True)
         df["mean"] = df.mean(axis=1, numeric_only=True)
-        df.sort_values(by=["variance"],ascending=False,inplace=True)
+
 
         #see some samples and shape
         print(df.shape)
@@ -115,6 +123,55 @@ def load_hypbc(type="all",normalize = "none",visualize=False):
             axes[i].hist(cur_frame, bins=50)
             axes[i].set_title('mean,var=({:.2f},{:.2f})'.format(mean, var),fontsize=8)
 
-    return df
+
+    #load clinical data
+    clinical_df = pd.read_csv(clinical_data_path, sep="\t", header=4)
+
+    # add the clinical data to the samples
+    transposed_df = df.transpose()
+    transposed_df.reset_index(inplace=True)
+    transposed_df.rename(columns={"index": "SAMPLE_ID"}, inplace=True)
+    df_full_data = pd.merge(transposed_df, clinical_df, on="SAMPLE_ID") #df_full: rows are patients, colums are features + clinical data
+
+    #generate labels
+    labels = df_full_data["CANCER_TYPE_DETAILED"]
+    label_dict = {}
+    for i,val in enumerate(labels.unique().tolist()):
+        label_dict[val] = i
+
+    labels.replace(label_dict, inplace=True)
+
+    #generate the data
+    hugo_sym = df["Hugo_Symbol"].to_list()
+    df.drop(labels=['Hugo_Symbol','variance'], inplace=True,axis=1)
+    sample_names = df.columns.values
+
+    return df.to_numpy().transpose(), labels.to_numpy(), hugo_sym, sample_names
+
+def generate_similarity_matrix(data, method = 'euclidean', features_dim = 1000,visualize=False):
+    #assume data is a dataframe where each row is a sample and each column  is a feature
+    filt_data = data[:,:features_dim]
+    mat = sp.distance.cdist(filt_data,filt_data,method)
+    if visualize:
+        v = plt.imshow(mat,cmap="gray")
+        plt.title(f"similarity matrix, method:{method},#dim={features_dim}")
+        plt.show()
+
+    return mat
+def load_hypbc(type="partial",
+               normalize = "none",
+               feature_dim = 50,
+               method = "cosine",
+               visualize=False):
+    data, labels, feat_names, samp_names = load_hypbc_data(type=type,
+                                                           normalize=normalize,
+                                                           visualize=visualize)
+    sim_mat = generate_similarity_matrix(data,
+                                         features_dim=50,
+                                         method="cosine",
+                                         visualize=visualize)
+    return data, labels, sim_mat
+
 if __name__ == "__main__":
-    data = load_hypbc(type="partial",normalize = "none",visualize=True)
+    load_hypbc()
+

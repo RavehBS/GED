@@ -14,6 +14,7 @@ import optim
 from config import config_args
 from datasets.hc_dataset import HCDataset
 from datasets.loading import load_data
+from datasets.loading import load_hypbc
 from model.hyphc import HypHC
 from utils.metrics import dasgupta_cost
 from utils.training import add_flags_from_config, get_savedir
@@ -55,7 +56,14 @@ def train(args):
         torch.set_default_dtype(torch.float64)
 
     # create dataset
-    x, y_true, similarities = load_data(args.dataset)
+    #x, y_true, similarities = load_data(args.dataset)
+    x, y_true, similarities = load_hypbc(type="partial",
+               normalize = "none",
+               feature_dim = 3,
+               method = "cosine",
+               visualize=False)
+    print(similarities.shape)
+    print(similarities)
     dataset = HCDataset(x, y_true, similarities, num_samples=args.num_samples)
     dataloader = data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
 

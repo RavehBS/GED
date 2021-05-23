@@ -23,5 +23,5 @@ config_args = {
     "max_scale": 1 - 1e-3,
 
     # dataset
-    "dataset": "zoo",
+    "dataset": "breast_cancer",
 }
