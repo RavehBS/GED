@@ -6,12 +6,12 @@ config_args = {
     "epochs": 50,
     "batch_size": 256,
     "learning_rate": 1e-3,
-    "eval_every": 10,
+    "eval_every": 1,
     "patience": 20,
     "optimizer": "RAdam",
     "save": 1,
     "fast_decoding": 1,
-    "num_samples": -1,
+    "num_samples": 1_000_000, #-1
 
     # model
     "dtype": "double",
@@ -24,4 +24,6 @@ config_args = {
 
     # dataset
     "dataset": "breast_cancer",
+    "similarity_metric": "cosine", #'cosine','euclidean','mahalanobis','cityblock'
+    "feature_dim": 10
 }

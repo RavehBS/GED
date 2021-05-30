@@ -18,7 +18,7 @@ from datasets.loading import load_hypbc
 from model.hyphc import HypHC
 from utils.metrics import dasgupta_cost
 from utils.training import add_flags_from_config, get_savedir
-
+from visualize import visualize_tree
 
 def train(args):
     logger = logging.getLogger()
@@ -59,9 +59,9 @@ def train(args):
     #x, y_true, similarities = load_data(args.dataset)
     x, y_true, similarities = load_hypbc(type="partial",
                normalize = "none",
-               feature_dim = 3,
-               method = "cosine",
-               visualize=False)
+               feature_dim = args.feature_dim,
+               method = args.similarity_metric,
+               visualize=True)
     print(similarities.shape)
     print(similarities)
     dataset = HCDataset(x, y_true, similarities, num_samples=args.num_samples)
@@ -101,6 +101,13 @@ def train(args):
         if (epoch + 1) % args.eval_every == 0:
             model.eval()
             tree = model.decode_tree(fast_decoding=args.fast_decoding)
+
+            #save embedding and weights for this epoch
+            model_path = os.path.join(save_dir, f"model_sd{args.seed}_epch{epoch}.pkl")
+            torch.save(model.state_dict(), model_path)
+            img_path = os.path.join(save_dir, f"embedding_sd{args.seed}_epch{epoch}.png")
+            visualize_tree(model, tree, y_true, img_path)
+
             cost = dasgupta_cost(tree, similarities)
             logging.info("{}:\t{:.4f}".format("Dasgupta's cost", cost))
             if cost < best_cost:

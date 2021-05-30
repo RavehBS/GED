@@ -123,6 +123,8 @@ def load_hypbc_data(type="all",normalize = "none",visualize=False):
             axes[i].hist(cur_frame, bins=50)
             axes[i].set_title('mean,var=({:.2f},{:.2f})'.format(mean, var),fontsize=8)
 
+        df.drop(labels=["min","max","mean"],inplace=True,axis=1)
+
 
     #load clinical data
     clinical_df = pd.read_csv(clinical_data_path, sep="\t", header=4)
@@ -151,7 +153,14 @@ def load_hypbc_data(type="all",normalize = "none",visualize=False):
 def generate_similarity_matrix(data, method = 'euclidean', features_dim = 1000,visualize=False):
     #assume data is a dataframe where each row is a sample and each column  is a feature
     filt_data = data[:,:features_dim]
-    mat = sp.distance.cdist(filt_data,filt_data,method)
+    dist = sp.distance.cdist(filt_data,filt_data,method)
+
+    #normalize similarity to [0,1]
+    if method == 'cosine':
+        mat = 0.5*(2-dist) # note that dist = 1-cos(t) => mat = 0.5(1 + cos(t))
+    else:
+        mat = 1-dist*(1/(np.amax(dist)))
+
     if visualize:
         v = plt.imshow(mat,cmap="gray")
         plt.title(f"similarity matrix, method:{method},#dim={features_dim}")
@@ -167,8 +176,8 @@ def load_hypbc(type="partial",
                                                            normalize=normalize,
                                                            visualize=visualize)
     sim_mat = generate_similarity_matrix(data,
-                                         features_dim=50,
-                                         method="cosine",
+                                         features_dim=feature_dim,
+                                         method=method,
                                          visualize=visualize)
     return data, labels, sim_mat
 
