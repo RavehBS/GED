@@ -16,18 +16,20 @@ HYPBC_DATASETS = [
     "bc"
 ]
 
-def load_data(dataset, normalize=True):
+def load_data(dataset, normalize=True, data_size = None):
     """Load dataset.
 
     @param dataset: dataset name
     @type dataset: str
+    @param data_size: number of samples in dataset
+    @type data_size: int
     @param normalize: whether to normalize features or not
     @type normalize: boolean
     @return: feature vectors, labels, and pairwise similarities computed with cosine similarity
     @rtype: Tuple[np.array, np.array, np.array]
     """
     if dataset in UCI_DATASETS:
-        x, y = load_uci_data(dataset)
+        x, y = load_uci_data(dataset,data_size)
     elif dataset in HYPBC_DATASETS:
         x,y = load_hypbc()
     else:
@@ -41,10 +43,13 @@ def load_data(dataset, normalize=True):
     similarities = np.triu(similarities) + np.triu(similarities).T
     similarities[np.diag_indices_from(similarities)] = 1.0
     similarities[similarities > 1.0] = 1.0
+    ####DEBUG####
+    matrix_histogram(similarities)
+
     return x, y, similarities
 
 
-def load_uci_data(dataset):
+def load_uci_data(dataset,data_size = None):
     """Loads data from UCI repository.
 
     @param dataset: UCI dataset name
@@ -62,8 +67,10 @@ def load_uci_data(dataset):
     classes = {}
     class_counter = 0
     start_idx, end_idx, label_idx = ids[dataset]
+    i = 0
     with open(data_path, 'r') as f:
         for line in f:
+            i = i + 1
             split_line = line.split(",")
             
             if len(split_line) >= end_idx - start_idx + 1:
@@ -73,11 +80,14 @@ def load_uci_data(dataset):
                     classes[label] = class_counter
                     class_counter += 1
                 y.append(classes[label])
+            if data_size is not None and i == data_size:
+                break
     y = np.array(y, dtype=int)
     x = np.array(x, dtype=float)
     mean = x.mean(0)
+    epslion = 1e-2
     std = x.std(0)
-    x = (x - mean) / std
+    x = (x - mean) / (std + epslion)
     return x, y
 
 def load_hypbc_data(type="all",normalize = "none",visualize=False):
@@ -169,17 +179,33 @@ def generate_similarity_matrix(data, method = 'euclidean', features_dim = 1000,v
     return mat
 def load_hypbc(type="partial",
                normalize = "none",
+               num_data_samples = -1,
                feature_dim = 50,
                method = "cosine",
                visualize=False):
     data, labels, feat_names, samp_names = load_hypbc_data(type=type,
                                                            normalize=normalize,
                                                            visualize=visualize)
+    if num_data_samples > 2:
+        data = data[:num_data_samples]
+        labels = labels[:num_data_samples]
+
     sim_mat = generate_similarity_matrix(data,
                                          features_dim=feature_dim,
                                          method=method,
                                          visualize=visualize)
+    ####DEBUG####
+    matrix_histogram(sim_mat)
     return data, labels, sim_mat
+
+
+
+def matrix_histogram(matrix):
+    vector = matrix.flatten()
+    #hist, bin_edges = np.histogram(vector)
+    plt.figure()
+    _ = plt.hist(vector,bins='auto')
+    plt.show()
 
 if __name__ == "__main__":
     load_hypbc()

@@ -56,12 +56,16 @@ def train(args):
         torch.set_default_dtype(torch.float64)
 
     # create dataset
-    #x, y_true, similarities = load_data(args.dataset)
-    x, y_true, similarities = load_hypbc(type="partial",
-               normalize = "none",
-               feature_dim = args.feature_dim,
-               method = args.similarity_metric,
-               visualize=True)
+    if args.dataset == 'breast_cancer':
+        x, y_true, similarities = load_hypbc(type="partial",
+                                             normalize="none",
+                                             num_data_samples=args.num_data_samples,
+                                             feature_dim=args.feature_dim,
+                                             method=args.similarity_metric,
+                                             visualize=True)
+    else:
+        x, y_true, similarities = load_data(args.dataset, data_size=args.num_data_samples)
+
     print(similarities.shape)
     print(similarities)
     dataset = HCDataset(x, y_true, similarities, num_samples=args.num_samples)
@@ -85,6 +89,8 @@ def train(args):
         total_loss = 0.0
         with tqdm(total=len(dataloader), unit='ex') as bar:
             for step, (triple_ids, triple_similarities) in enumerate(dataloader):
+                #for param in model.parameters():
+                    #print(param.data)
                 triple_ids = triple_ids.cuda()
                 triple_similarities = triple_similarities.cuda()
                 loss = model.loss(triple_ids, triple_similarities)

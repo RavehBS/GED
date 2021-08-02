@@ -21,6 +21,8 @@ class HypHC(nn.Module):
         self.embeddings = nn.Embedding(n_nodes, rank)
         self.temperature = temperature
         self.scale = nn.Parameter(torch.Tensor([init_size]), requires_grad=True)
+        #TODO: consider change init_size
+        #embedding.weight.data is suspected as the data points coodrinates
         self.embeddings.weight.data = project(
             self.scale * (2 * torch.rand((n_nodes, rank)) - 1.0)
         )
