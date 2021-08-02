@@ -24,6 +24,7 @@ config_args = {
 
     # dataset
     "dataset": "breast_cancer",
+    #"dataset": "zoo",
     "similarity_metric": "cosine", #'cosine','euclidean','mahalanobis','cityblock'
     "num_data_samples": 200, #any value below 2 will take all samples.
     "feature_dim": 10 #10-20e3 logscale
