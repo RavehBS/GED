@@ -186,9 +186,32 @@ def load_hypbc(type="partial",
     data, labels, feat_names, samp_names = load_hypbc_data(type=type,
                                                            normalize=normalize,
                                                            visualize=visualize)
-    if num_data_samples > 2:
-        data = data[:num_data_samples]
-        labels = labels[:num_data_samples]
+
+    unique_labels = np.unique(labels).tolist()
+
+    if num_data_samples > len(unique_labels):
+        indices_chosen = []
+        #take at least 1 of every label.
+        indices = np.arange(len(labels))
+        mask = np.ones_like(indices,dtype=bool)
+        for label in unique_labels:
+            cur_label_indices = np.where(labels==label)
+            chosen_idx = np.random.choice(cur_label_indices[0])
+            mask[chosen_idx] = False
+            indices_chosen.append(chosen_idx)
+
+
+        #indices left_after_choosing_one_for_each_label
+        indices = indices[mask]
+
+        #choose the rest of the samples.
+        chosen_indices_of_the_indices = np.random.choice(len(indices), num_data_samples - len(unique_labels))
+        leftover_indices_chosen = indices[chosen_indices_of_the_indices]
+        indices_chosen = np.concatenate([indices_chosen,leftover_indices_chosen])
+
+        assert(len(indices_chosen) == num_data_samples)
+        data = data[indices_chosen]
+        labels = labels[indices_chosen]
 
     sim_mat = generate_similarity_matrix(data,
                                          features_dim=feature_dim,
