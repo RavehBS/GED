@@ -56,15 +56,16 @@ def train(args):
         torch.set_default_dtype(torch.float64)
 
     # create dataset
+    label_dict = None
     if args.dataset == 'breast_cancer':
-        x, y_true, similarities = load_hypbc(type="partial",
+        x, y_true, similarities, label_dict = load_hypbc(type="partial",
                                              normalize="none",
                                              num_data_samples=args.num_data_samples,
                                              feature_dim=args.feature_dim,
                                              method=args.similarity_metric,
                                              visualize=True)
     else:
-        x, y_true, similarities = load_data(args.dataset, data_size=args.num_data_samples)
+        x, y_true, similarities, label_dict = load_data(args.dataset, data_size=args.num_data_samples)
 
     print(similarities.shape)
     print(similarities)
@@ -112,7 +113,7 @@ def train(args):
             model_path = os.path.join(save_dir, f"model_sd{args.seed}_epch{epoch}.pkl")
             torch.save(model.state_dict(), model_path)
             img_path = os.path.join(save_dir, f"embedding_sd{args.seed}_epch{epoch}.png")
-            visualize_tree(model, tree, y_true, img_path)
+            visualize_tree(model, tree, y_true, img_path,label_dict)
 
             cost = dasgupta_cost(tree, similarities)
             logging.info("{}:\t{:.4f}".format("Dasgupta's cost", cost))

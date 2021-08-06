@@ -47,12 +47,12 @@ if __name__ == "__main__":
     ax = plot_tree_from_leaves(ax, tree, leaves_embeddings, labels=y_true)
     fig.savefig(os.path.join(args.model_dir, f"embeddings_{args.seed}.png"))
 
-def visualize_tree(model,tree,y_true, save_path):
+def visualize_tree(model,tree,y_true, save_path,label_dict):
     leaves_embeddings = model.normalize_embeddings(model.embeddings.weight.data)
     leaves_embeddings = project(leaves_embeddings).detach().cpu().numpy()
     fig = plt.figure(figsize=(5, 5))
     ax = fig.add_subplot(111)
-    ax = plot_tree_from_leaves(ax, tree, leaves_embeddings, labels=y_true)
+    ax = plot_tree_from_leaves(ax, tree, leaves_embeddings, label_dict=label_dict, labels=y_true)
     fig.savefig(save_path)
 
 def visualize_epoch(model,model_state_dir,y_true,epoch_idx):

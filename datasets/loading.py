@@ -1,3 +1,5 @@
+
+
 """Dataset loading."""
 
 import os
@@ -11,6 +13,7 @@ UCI_DATASETS = [
     "zoo",
     "iris",
 ]
+ZOO_DICT = ["Mammals","Birds", "Reptiles","Fish", "Amphibia","Insects", "Shellfish"]
 
 HYPBC_DATASETS = [
     "bc"
@@ -46,7 +49,8 @@ def load_data(dataset, normalize=True, data_size = None):
     ####DEBUG####
     matrix_histogram(similarities)
 
-    return x, y, similarities
+    dict = ZOO_DICT if dataset == "zoo" else None
+    return x, y, similarities, dict
 
 
 def load_uci_data(dataset,data_size = None):
@@ -72,7 +76,7 @@ def load_uci_data(dataset,data_size = None):
         for line in f:
             i = i + 1
             split_line = line.split(",")
-            
+
             if len(split_line) >= end_idx - start_idx + 1:
                 x.append([float(x) for x in split_line[start_idx:end_idx]])
                 label = split_line[label_idx]
@@ -88,6 +92,7 @@ def load_uci_data(dataset,data_size = None):
     epslion = 1e-2
     std = x.std(0)
     x = (x - mean) / (std + epslion)
+
     return x, y
 
 def load_hypbc_data(type="all",normalize = "none",visualize=False):
@@ -153,12 +158,13 @@ def load_hypbc_data(type="all",normalize = "none",visualize=False):
 
     labels.replace(label_dict, inplace=True)
 
+
     #generate the data
     hugo_sym = df["Hugo_Symbol"].to_list()
     df.drop(labels=['Hugo_Symbol','variance'], inplace=True,axis=1)
     sample_names = df.columns.values
 
-    return df.to_numpy().transpose(), labels.to_numpy(), hugo_sym, sample_names
+    return df.to_numpy().transpose(), labels.to_numpy(), hugo_sym, sample_names, list(label_dict.keys())
 
 def generate_similarity_matrix(data, method = 'euclidean', features_dim = 1000,visualize=False):
     #assume data is a dataframe where each row is a sample and each column  is a feature
@@ -183,7 +189,7 @@ def load_hypbc(type="partial",
                feature_dim = 50,
                method = "cosine",
                visualize=False):
-    data, labels, feat_names, samp_names = load_hypbc_data(type=type,
+    data, labels, feat_names, samp_names, label_dict = load_hypbc_data(type=type,
                                                            normalize=normalize,
                                                            visualize=visualize)
 
@@ -219,7 +225,7 @@ def load_hypbc(type="partial",
                                          visualize=visualize)
     ####DEBUG####
     matrix_histogram(sim_mat)
-    return data, labels, sim_mat
+    return data, labels, sim_mat, label_dict
 
 
 

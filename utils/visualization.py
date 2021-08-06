@@ -1,7 +1,9 @@
 """Visualization utils."""
+import matplotlib.colors as pltcolor
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import random
 
 from utils.lca import hyp_lca
 
@@ -80,14 +82,27 @@ def is_leaf(tree, node):
     return len(list(tree.neighbors(node))) == 0
 
 
-def plot_tree_from_leaves(ax, tree, leaves_embeddings, labels, color_seed=1234):
+def plot_tree_from_leaves(ax, tree, leaves_embeddings, labels,label_dict, color_seed=1234):
     """Plots a tree on leaves embeddings using the LCA construction."""
     circle = plt.Circle((0, 0), 1.0, color='r', alpha=0.1)
     ax.add_artist(circle)
     n = leaves_embeddings.shape[0]
     embeddings = complete_tree(tree, leaves_embeddings)
-    colors = get_colors(labels, color_seed)
-    ax.scatter(embeddings[:n, 0], embeddings[:n, 1], c=colors, s=50, alpha=0.6)
+    #colors = get_colors(labels, color_seed)
+    num_of_labels = len(sorted(np.unique(labels)))
+    rng = random.Random(0) #create local random with seed 0 - thus class colors are constant throughout different epochs
+    label_to_color = [(rng.random(),rng.random(),rng.random()) for i in range(num_of_labels)]
+    colors= pltcolor.ListedColormap(label_to_color)
+    handles = ax.scatter(embeddings[:n, 0], embeddings[:n, 1], c=labels, cmap=colors, s=50, alpha=0.6)
+    if label_dict is not None:
+        ax.legend(handles = handles.legend_elements()[0], labels = label_dict, loc = 'best' )
+    plt.show()
+    """handles = []
+    for label_type in sorted(np.unique(labels)):
+        cur_embedding = embeddings[labels == label_type]
+        handles.append(ax.scatter(cur_embedding[:n, 0], cur_embedding[:n, 1], s=50, alpha=0.6))
+    if label_dict is not None:
+        ax.legend(label_dict)"""
 
     for n1, n2 in tree.edges():
         x1 = embeddings[n1]
