@@ -8,6 +8,8 @@ import torch
 import torch.utils.data as data
 from tqdm import tqdm
 import optuna
+import joblib
+from datetime import  datetime
 import copy
 
 import optim
@@ -30,6 +32,7 @@ class Objective(object):
 
         #set all config hyperparams
         #general
+        optim_args.epochs = trial.suggest_int("epochs",1,50,step=5)
         batch_size_power = trial.suggest_int("batch_size_power",6,9)
         optim_args.batch_size = 2**batch_size_power  # 64-512
         optim_args.learning_rate = trial.suggest_float("learning_rate",1e-5,1,log=True)# logscale 1e-5 - 1e0
@@ -42,7 +45,7 @@ class Objective(object):
 
         # dataset
         optim_args.similarity_metric = trial.suggest_categorical("similarity_metric",['cosine','euclidean','mahalanobis','cityblock'])
-        optim_args.feature_dim = trial.suggest_int("feature_dim", 10,20e3,log=True)  # 10-20e3 logscale
+        optim_args.feature_dim = trial.suggest_int("feature_dim", 10,200)  # 10-200
 
         #Init algorithm
         logger = logging.getLogger()
@@ -193,10 +196,21 @@ if __name__ == "__main__":
     parser = add_flags_from_config(parser, config_args)
     args = parser.parse_args()
 
+    logger = logging.getLogger()
+
+    logger.setLevel(logging.INFO)  # Setup the root logger.
+
+    hyper_param_log_path = "embeddings/breast_cancer/hyper_param"
+    os.makedirs(hyper_param_log_path,exist_ok=True)
+    logfile = os.path.join(hyper_param_log_path,f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_hyper.log")
+    logger.addHandler(logging.FileHandler(logfile, mode="w"))
+
+    optuna.logging.enable_propagation()  # Propagate logs to the root logger
 
     sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(study_name="hypbc", direction="minimize", sampler=sampler)
-    study.optimize(Objective(args), n_trials=100, timeout=600)
+    logger.info("Start optimization.")
+    study.optimize(Objective(args), n_trials=100, timeout=None)
     pruned_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED]
     complete_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
     print("Study statistics: ")
@@ -209,6 +223,11 @@ if __name__ == "__main__":
     print(" Params: ")
     for key, value in trial.params.items():
         print(" {}: {}".format(key, value))
+
+    optuna.visualization.plot_param_importances(study)
+    joblib.dump(study, "study.pkl")
+
+
 
 
 

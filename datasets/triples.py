@@ -24,6 +24,7 @@ def samples_triples(n_nodes, num_samples):
         pairs_base = np.repeat(np.expand_dims(pairs, 0), k_base, axis=0).reshape((-1, 2))
         pairs = np.concatenate([pairs_base, pairs_rem], axis=0)
     num_samples = pairs.shape[0]
+    #TODO: note that this code doesn't avoid taking the same triples: [1,2,3]==[3,2,1] and bad triples, e.g. [1,2,1]
     triples = np.concatenate(
         [pairs, np.random.randint(n_nodes, size=(num_samples, 1))],
         axis=1
