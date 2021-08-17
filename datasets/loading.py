@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.spatial as sp
+import scipy
 
 UCI_DATASETS = [
     "glass",
@@ -95,7 +96,88 @@ def load_uci_data(dataset,data_size = None):
 
     return x, y
 
-def load_hypbc_data(type="all",normalize = "none",visualize=False):
+
+def get_d2(data, label, os_time, os_sta, patient_list):
+    returned_data  = []
+    returned_label = []
+    returned_os_time = []
+    returned_os_stat = []
+    shape = patient_list.shape[0]
+
+    label_dict = ['LumA','LumB','Basal','Her2','Normal']
+
+    for i in range(shape):
+        if label[i].size > 0 and patient_list[i]:
+            if label[i][0] == 'LumA':
+                returned_label.append(0)
+                returned_data.append(data[:,i])
+                returned_os_time.append(os_time[i][0].astype(float))
+                if os_sta[i][0] == 'LIVING':
+                    returned_os_stat.append(0)
+                else:
+                    returned_os_stat.append(1)
+            elif label[i][0] == 'LumB':
+                returned_label.append(1)
+                returned_data.append(data[:,i])
+                returned_os_time.append(os_time[i][0].astype(float))
+                if os_sta[i][0] == 'LIVING':
+                    returned_os_stat.append(0)
+                else:
+                    returned_os_stat.append(1)
+            elif label[i][0] == 'Basal':
+                returned_label.append(2)
+                returned_data.append(data[:,i])
+                returned_os_time.append(os_time[i][0].astype(float))
+                if os_sta[i][0] == 'LIVING':
+                    returned_os_stat.append(0)
+                else:
+                    returned_os_stat.append(1)
+            elif label[i][0] == 'Her2':
+                returned_label.append(3)
+                returned_data.append(data[:,i])
+                returned_os_time.append(os_time[i][0].astype(float))
+                if os_sta[i][0] == 'LIVING':
+                    returned_os_stat.append(0)
+                else:
+                    returned_os_stat.append(1)
+            elif label[i][0] == 'Normal':
+                returned_label.append(4)
+                returned_data.append(data[:,i])
+                returned_os_time.append(os_time[i][0].astype(float))
+                if os_sta[i][0] == 'LIVING':
+                    returned_os_stat.append(0)
+                else:
+                    returned_os_stat.append(1)
+    return returned_data, returned_os_time, returned_os_stat, returned_label, label_dict
+
+def load_hypbc_5_type_metabric():
+    data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/dataStructMetabric.mat")
+
+    mat2 = scipy.io.loadmat(data_path)
+    gene_data2 = mat2['dataStructMetabric']['data'][0][0]
+    #remove nan
+    gene_data2[np.where(np.isnan(gene_data2))[0], np.where(np.isnan(gene_data2))[1]] = 0
+
+    patient_list2 = np.sum(gene_data2, axis=0) != 0
+
+    clinic2_info = mat2['dataStructMetabric']['clinic']
+    clinVariable2 = clinic2_info[0, 0]['clinVariable'][0][0]
+    clinData2 = clinic2_info[0, 0]['data'][0][0]
+    geneList2 = mat2['dataStructMetabric']['genes'][0][0]
+
+    data2, os_time2, os_stat2, label2,label_dict = get_d2(gene_data2, clinData2[:, 6], clinData2[:, 22], clinData2[:, 23],
+                                               patient_list2)
+    data2 = np.vstack(data2) #gene expression data, each row is patient
+    label2 = np.asarray(label2) #matching cancer types
+    sample_names = [] #patient specific ID
+    feat_names = [] #gene names
+
+    #TODO: sort data  by variance
+    #TODO: remove correlated features?
+
+    return data2, label2, sample_names, feat_names, label_dict
+
+def load_hypbc_data_deprecated(type="all", normalize ="none", visualize=False):
     if type == "all":
         data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/data_mrna_all.txt")
     elif type == "partial":
@@ -166,6 +248,8 @@ def load_hypbc_data(type="all",normalize = "none",visualize=False):
 
     return df.to_numpy().transpose(), labels.to_numpy(), hugo_sym, sample_names, list(label_dict.keys())
 
+
+
 def generate_similarity_matrix(data, method = 'euclidean', features_dim = 1000,visualize=False):
     #assume data is a dataframe where each row is a sample and each column  is a feature
     filt_data = data[:,:features_dim]
@@ -189,9 +273,10 @@ def load_hypbc(type="partial",
                feature_dim = 50,
                method = "cosine",
                visualize=False):
-    data, labels, feat_names, samp_names, label_dict = load_hypbc_data(type=type,
-                                                           normalize=normalize,
-                                                           visualize=visualize)
+    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric()
+    # data, labels, feat_names, samp_names, label_dict = load_hypbc_data_deprecated(type=type,
+    #                                                                               normalize=normalize,
+    #                                                                               visualize=visualize)
 
     unique_labels = np.unique(labels).tolist()
 
