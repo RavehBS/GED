@@ -95,7 +95,7 @@ def plot_tree_from_leaves(ax, tree, leaves_embeddings, labels,label_dict, color_
     colors= pltcolor.ListedColormap(label_to_color)
     handles = ax.scatter(embeddings[:n, 0], embeddings[:n, 1], c=labels, cmap=colors, s=50, alpha=0.6)
     if label_dict is not None:
-        ax.legend(handles = handles.legend_elements()[0], labels = label_dict, loc = 'best' )
+        ax.legend(handles = handles.legend_elements()[0], labels = label_dict, loc='upper center', bbox_to_anchor=(0.5, 1.15),ncol=3,fontsize='small')
     plt.show()
     """handles = []
     for label_type in sorted(np.unique(labels)):
