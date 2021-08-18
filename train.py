@@ -63,12 +63,13 @@ def train(args):
                                              num_data_samples=args.num_data_samples,
                                              feature_dim=args.feature_dim,
                                              method=args.similarity_metric,
+                                             feature_corr_thresh = args.feature_correlation_thresh,
                                              visualize=True)
     else:
         x, y_true, similarities, label_dict = load_data(args.dataset, data_size=args.num_data_samples)
 
-    print(similarities.shape)
-    print(similarities)
+    #print(similarities.shape)
+    #print(similarities)
     dataset = HCDataset(x, y_true, similarities, num_samples=args.num_samples)
     dataloader = data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
 
