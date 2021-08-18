@@ -15,18 +15,21 @@ from config import config_args
 from datasets.hc_dataset import HCDataset
 from datasets.loading import load_data
 from datasets.loading import load_hypbc
+from datasets.loading import load_hypbc_multi_group
 from model.hyphc import HypHC
 from utils.metrics import dasgupta_cost
 from utils.training import add_flags_from_config, get_savedir
 from visualize import visualize_tree
 
-def train(args):
+
+
+def train_internal(args,x, y_true, similarities, label_dict,prefix=""):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
 
     # get saving directory
     if args.save:
-        save_dir = get_savedir(args)
+        save_dir = get_savedir(args,prefix)
         logging.info("Save directory: " + save_dir)
         save_path = os.path.join(save_dir, "model_{}.pkl".format(args.seed))
         if os.path.exists(save_dir):
@@ -55,21 +58,6 @@ def train(args):
     if args.dtype == "double":
         torch.set_default_dtype(torch.float64)
 
-    # create dataset
-    label_dict = None
-    if args.dataset == 'breast_cancer':
-        x, y_true, similarities, label_dict = load_hypbc(type="partial",
-                                             normalize="none",
-                                             num_data_samples=args.num_data_samples,
-                                             feature_dim=args.feature_dim,
-                                             method=args.similarity_metric,
-                                             feature_corr_thresh = args.feature_correlation_thresh,
-                                             visualize=True)
-    else:
-        x, y_true, similarities, label_dict = load_data(args.dataset, data_size=args.num_data_samples)
-
-    #print(similarities.shape)
-    #print(similarities)
     dataset = HCDataset(x, y_true, similarities, num_samples=args.num_samples)
     dataloader = data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
 
@@ -158,10 +146,43 @@ def train(args):
         logger.removeHandler(hdlr)
     return
 
+def multi_train(args,num_groups):
+    # create dataset
+    label_dict = None
+    if args.dataset == 'breast_cancer':
+        x, y_true, similarities, label_dict = load_hypbc_multi_group(
+                        num_groups=num_groups,
+                        num_data_samples = args.num_data_samples,
+                        feature_dim = args.feature_dim,
+                        method = args.similarity_metric,
+                        feature_correlation_thresh = args.feature_correlation_thresh,
+                        visualize = True)
+    else:
+        assert (False,"only breast cancer dataset possible")
+
+    for i in range(x.shape[0]):
+        train_internal(args, x[i], y_true[i], similarities[i], label_dict,prefix="mul")
+
+
+def single_train(args):
+    # create dataset
+    label_dict = None
+    if args.dataset == 'breast_cancer':
+        x, y_true, similarities, label_dict = load_hypbc_multi_group(num_groups=1,
+                                                                     num_data_samples=args.num_data_samples,
+                                                                     feature_dim=args.feature_dim,
+                                                                     method=args.similarity_metric,
+                                                                     feature_correlation_thresh=args.feature_correlation_thresh,
+                                                                     visualize=True)
+    else:
+        x, y_true, similarities, label_dict = load_data(args.dataset, data_size=args.num_data_samples)
+
+    train_internal(args,x[0], y_true[0], similarities[0], label_dict, prefix="sin")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Hyperbolic Hierarchical Clustering.")
     parser = add_flags_from_config(parser, config_args)
     args = parser.parse_args()
-    train(args)
+    single_train(args)
 

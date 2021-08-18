@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.spatial as sp
 import scipy.io
+import random
 
 UCI_DATASETS = [
     "glass",
@@ -150,7 +151,7 @@ def get_d2(data, label, os_time, os_sta, patient_list):
                     returned_os_stat.append(1)
     return returned_data, returned_os_time, returned_os_stat, returned_label, label_dict
 
-def load_hypbc_5_type_metabric(visualize = False, corr_thresh = 0.9):
+def load_hypbc_5_type_metabric(visualize = False, corr_thresh = 0.9,num_features=-1):
     data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/dataStructMetabric.mat")
 
     mat2 = scipy.io.loadmat(data_path)
@@ -172,6 +173,20 @@ def load_hypbc_5_type_metabric(visualize = False, corr_thresh = 0.9):
     sample_names = [] #patient specific ID
     feat_names = [] #gene names
 
+
+    data2,label2,geneList2,sample_names, feat_names, label_dict = \
+        preprocess_data(data2,label2,geneList2,sample_names, feat_names, label_dict,
+                    num_features = num_features,filter_by_corr = True,corr_thresh = corr_thresh)
+
+    return data2, label2, sample_names, feat_names, label_dict
+
+def preprocess_data(data,labels,geneList,sample_names, feat_names, label_dict,
+                    num_features = -1,filter_by_corr = True,corr_thresh = 0.9):
+
+    data2 = data
+    labels2 = labels
+    geneList2 = geneList
+
     #sort data  by feature variance
     feature_variance = np.var(data2,axis=0)
     sorted_ind = np.flipud(np.argsort(feature_variance)) #sort in descending manner
@@ -184,22 +199,29 @@ def load_hypbc_5_type_metabric(visualize = False, corr_thresh = 0.9):
     sorted_data_by_variance = np.squeeze(sorted_data_by_variance[:,non_const_features_ind])
     geneList2 = geneList2[non_const_features_ind]
 
-    # remove correlated features
-    feature_correlation = np.corrcoef(x=sorted_data_by_variance,rowvar=False)
-    col_to_drop = []
-    n = len(feature_correlation)
-    for i in range(n):
-        for j in range(i+1,n): #only check triangle above the diagonal
-            if i not in col_to_drop:
-                if np.abs(feature_correlation[i,j]) > corr_thresh:
-                    col_to_drop.append(j)
-    bool_col_to_drop = np.ones(n,dtype=bool)
-    bool_col_to_drop[col_to_drop] = False
-    print(bool_col_to_drop)
-    filtered_data = sorted_data_by_variance[:,bool_col_to_drop]
-    geneList2 = geneList2[bool_col_to_drop]
+    if num_features > 1:
+        sorted_data_by_variance = sorted_data_by_variance[:,:num_features]
+        geneList2 = geneList2[:num_features]
 
-    return filtered_data, label2, sample_names, feat_names, label_dict
+    if filter_by_corr:
+        # remove correlated features
+        feature_correlation = np.corrcoef(x=sorted_data_by_variance,rowvar=False)
+        col_to_drop = []
+        n = len(feature_correlation)
+        for i in range(n):
+            for j in range(i+1,n): #only check triangle above the diagonal
+                if i not in col_to_drop:
+                    if np.abs(feature_correlation[i,j]) > corr_thresh:
+                        col_to_drop.append(j)
+        bool_col_to_drop = np.ones(n,dtype=bool)
+        bool_col_to_drop[col_to_drop] = False
+        print(bool_col_to_drop)
+        filtered_data = sorted_data_by_variance[:,bool_col_to_drop]
+        geneList2 = geneList2[bool_col_to_drop]
+
+    return filtered_data, labels2, geneList2,sample_names, feat_names, label_dict
+
+
 
 def load_hypbc_data_deprecated(type="all", normalize ="none", visualize=False):
     if type == "all":
@@ -290,18 +312,33 @@ def generate_similarity_matrix(data, method = 'euclidean', features_dim = 1000,v
 
     return mat
 
-def load_hypbc(type="partial",
-               normalize = "none",
-               num_data_samples = -1,
-               feature_dim = 50,
-               method = "cosine",
-               feature_correlation_thresh = 0.9,
-               visualize=False):
-    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric(corr_thresh=feature_correlation_thresh,visualize=visualize)
-    # data, labels, feat_names, samp_names, label_dict = load_hypbc_data_deprecated(type=type,
-    #                                                                               normalize=normalize,
-    #                                                                               visualize=visualize)
+def split_data_to_groups(data, labels, n_groups):
+    rng = np.random.default_rng(0)  # for the same split everytime
+    possible_labels = np.sort(np.unique(labels))
+    data_indices_per_label = []
 
+    for l in possible_labels:
+        indices = np.array(np.where(labels == l))[0]
+        rng.shuffle(indices)
+        data_indices_per_label.append(np.array_split(indices, n_groups))
+    #{[()()],
+    # [()()]
+    # [()()]}
+
+    data_indices_per_label = np.array(data_indices_per_label)
+    #aggregate requested group
+    all_groups = []
+    for i in range(data_indices_per_label.shape[1]):#for each group
+        selected_group = []
+        for j in range(data_indices_per_label.shape[0]): #for each label
+            selected_group = selected_group + data_indices_per_label[j][i].tolist()
+        all_groups.append(selected_group)
+
+    all_data_groups = [data[g] for g in all_groups]
+    all_label_groups = [labels[g] for g in all_groups]
+    return all_data_groups, all_label_groups
+
+def choose_one_from_each(data,labels,num_data_samples):
     #choose num_data_samples patients from data.
     unique_labels = np.unique(labels).tolist()
 
@@ -326,8 +363,25 @@ def load_hypbc(type="partial",
         indices_chosen = np.concatenate([indices_chosen,leftover_indices_chosen])
 
         assert(len(indices_chosen) == num_data_samples)
-        data = data[indices_chosen]
-        labels = labels[indices_chosen]
+        data_out = data[indices_chosen]
+        labels_out = labels[indices_chosen]
+
+        return data_out,labels_out
+
+
+
+def load_hypbc(type="partial",
+               normalize = "none",
+               num_data_samples = -1,
+               feature_dim = 50,
+               method = "cosine",
+               feature_correlation_thresh = 0.9,
+               visualize=False):
+    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric(num_features=feature_dim, corr_thresh=feature_correlation_thresh,visualize=visualize)
+    # data, labels, feat_names, samp_names, label_dict = load_hypbc_data_deprecated(type=type,
+    #                                                                               normalize=normalize,
+    #                                                                               visualize=visualize)
+    data,labels = choose_one_from_each(data,labels,num_data_samples)
 
     sim_mat = generate_similarity_matrix(data,
                                          features_dim=feature_dim,
@@ -335,6 +389,33 @@ def load_hypbc(type="partial",
                                          visualize=visualize)
 
     return data, labels, sim_mat, label_dict
+
+def load_hypbc_multi_group(num_data_samples = -1,
+               num_groups = 1,
+               group_idx = 0,
+               feature_dim = 50,
+               method = "cosine",
+               feature_correlation_thresh = 0.9,
+               visualize=False):
+    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric(num_features=feature_dim,
+                                                                                  corr_thresh=feature_correlation_thresh,
+                                                                                  visualize=visualize)
+
+    # decide on data group size
+    n = len(labels) if num_data_samples == -1 else num_data_samples
+    min_num_of_groups = np.ceil(len(labels)/n)
+    num_groups = max(num_groups, min_num_of_groups)
+    assert (num_groups > group_idx)
+
+    #split data
+    data, labels = split_data_to_groups(data,labels,num_groups)
+
+    sim_matrices = [generate_similarity_matrix(data[i],
+                                         features_dim=feature_dim,
+                                         method=method,
+                                         visualize=visualize) for i in range(len(data))]
+
+    return data, labels, sim_matrices, label_dict
 
 
 

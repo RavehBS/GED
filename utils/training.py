@@ -58,8 +58,8 @@ def hash_dict(values):
     return m.hexdigest()
 
 
-def get_savedir(args):
+def get_savedir(args, prefix=""):
     """Hash of args used for training."""
     dir_hash = hash_dict(args.__dict__)
-    save_dir = os.path.join(os.environ["SAVEPATH"], args.dataset, dir_hash)
+    save_dir = os.path.join(os.environ["SAVEPATH"], args.dataset, f"{prefix}_{dir_hash}")
     return save_dir
