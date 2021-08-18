@@ -27,5 +27,6 @@ config_args = {
     #"dataset": "zoo",
     "similarity_metric": "cosine", #'cosine','euclidean','mahalanobis','cityblock'
     "num_data_samples": 200, #any value below 2 will take all samples.
-    "feature_dim": 10 #10-20e3 logscale
+    "feature_dim": 50, #10-20e3 logscale
+    "feature_correlation_thresh":0.9 #features that have a correlation of more than this value will be tossed
 }

@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.spatial as sp
-import scipy
+import scipy.io
 
 UCI_DATASETS = [
     "glass",
@@ -150,7 +150,7 @@ def get_d2(data, label, os_time, os_sta, patient_list):
                     returned_os_stat.append(1)
     return returned_data, returned_os_time, returned_os_stat, returned_label, label_dict
 
-def load_hypbc_5_type_metabric():
+def load_hypbc_5_type_metabric(visualize = False, corr_thresh = 0.9):
     data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/dataStructMetabric.mat")
 
     mat2 = scipy.io.loadmat(data_path)
@@ -172,10 +172,34 @@ def load_hypbc_5_type_metabric():
     sample_names = [] #patient specific ID
     feat_names = [] #gene names
 
-    #TODO: sort data  by variance
-    #TODO: remove correlated features?
+    #sort data  by feature variance
+    feature_variance = np.var(data2,axis=0)
+    sorted_ind = np.flipud(np.argsort(feature_variance)) #sort in descending manner
+    sorted_data_by_variance = data2[:,sorted_ind]
+    geneList2 = geneList2[sorted_ind]
 
-    return data2, label2, sample_names, feat_names, label_dict
+    # remove features with constant values
+    sorted_feature_variance = feature_variance[sorted_ind]
+    non_const_features_ind = np.where(sorted_feature_variance > 0)
+    sorted_data_by_variance = np.squeeze(sorted_data_by_variance[:,non_const_features_ind])
+    geneList2 = geneList2[non_const_features_ind]
+
+    # remove correlated features
+    feature_correlation = np.corrcoef(x=sorted_data_by_variance,rowvar=False)
+    col_to_drop = []
+    n = len(feature_correlation)
+    for i in range(n):
+        for j in range(i+1,n): #only check triangle above the diagonal
+            if i not in col_to_drop:
+                if np.abs(feature_correlation[i,j]) > corr_thresh:
+                    col_to_drop.append(j)
+    bool_col_to_drop = np.ones(n,dtype=bool)
+    bool_col_to_drop[col_to_drop] = False
+    print(bool_col_to_drop)
+    filtered_data = sorted_data_by_variance[:,bool_col_to_drop]
+    geneList2 = geneList2[bool_col_to_drop]
+
+    return filtered_data, label2, sample_names, feat_names, label_dict
 
 def load_hypbc_data_deprecated(type="all", normalize ="none", visualize=False):
     if type == "all":
@@ -248,8 +272,6 @@ def load_hypbc_data_deprecated(type="all", normalize ="none", visualize=False):
 
     return df.to_numpy().transpose(), labels.to_numpy(), hugo_sym, sample_names, list(label_dict.keys())
 
-
-
 def generate_similarity_matrix(data, method = 'euclidean', features_dim = 1000,visualize=False):
     #assume data is a dataframe where each row is a sample and each column  is a feature
     filt_data = data[:,:features_dim]
@@ -267,17 +289,20 @@ def generate_similarity_matrix(data, method = 'euclidean', features_dim = 1000,v
         plt.show()
 
     return mat
+
 def load_hypbc(type="partial",
                normalize = "none",
                num_data_samples = -1,
                feature_dim = 50,
                method = "cosine",
+               feature_correlation_thresh = 0.9,
                visualize=False):
-    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric()
+    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric(corr_thresh=feature_correlation_thresh,visualize=visualize)
     # data, labels, feat_names, samp_names, label_dict = load_hypbc_data_deprecated(type=type,
     #                                                                               normalize=normalize,
     #                                                                               visualize=visualize)
 
+    #choose num_data_samples patients from data.
     unique_labels = np.unique(labels).tolist()
 
     if num_data_samples > len(unique_labels):
@@ -308,8 +333,7 @@ def load_hypbc(type="partial",
                                          features_dim=feature_dim,
                                          method=method,
                                          visualize=visualize)
-    ####DEBUG####
-    matrix_histogram(sim_mat)
+
     return data, labels, sim_mat, label_dict
 
 
