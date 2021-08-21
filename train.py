@@ -81,6 +81,7 @@ def train_internal(args,x, y_true, similarities, label_dict,prefix=""):
             for step, (triple_ids, triple_similarities) in enumerate(dataloader):
                 #for param in model.parameters():
                     #print(param.data)
+                #TODO: generate triplets on the fly
                 triple_ids = triple_ids.cuda()
                 triple_similarities = triple_similarities.cuda()
                 loss = model.loss(triple_ids, triple_similarities)

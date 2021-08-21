@@ -6,7 +6,9 @@ import numpy as np
 import torch
 import torch.utils.data as data
 
-from datasets.triples import generate_all_triples, samples_triples
+
+#from datasets.triples import generate_all_triples, samples_triples, init_SK
+import datasets.triples as triplets
 
 
 class HCDataset(data.Dataset):
@@ -24,13 +26,17 @@ class HCDataset(data.Dataset):
         self.labels = labels
         self.similarities = similarities
         self.n_nodes = self.similarities.shape[0]
-        self.triples = self.generate_triples(num_samples)
+        #SK is series of sum of traingular series.
+        self.sum_of_triangular_series = triplets.init_sum_of_triangular_series(self.n_nodes)
+        self.triangular_series = triplets.ini_triangular_series(self.n_nodes)
+        #self.triples = self.generate_triples(num_samples) #This clogs up the memory
 
     def __len__(self):
         return len(self.triples)
 
     def __getitem__(self, idx):
-        triple = self.triples[idx]
+
+        triple = self.triples[idx] #TODO: generate triplets (triplet in the idx place)
         s12 = self.similarities[triple[0], triple[1]]
         s13 = self.similarities[triple[0], triple[2]]
         s23 = self.similarities[triple[1], triple[2]]
