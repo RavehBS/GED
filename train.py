@@ -160,8 +160,8 @@ def multi_train(args,num_groups):
     else:
         assert (False,"only breast cancer dataset possible")
 
-    for i in range(x.shape[0]):
-        train_internal(args, x[i], y_true[i], similarities[i], label_dict,prefix="mul")
+    for i in range(len(x)):
+        train_internal(args, x[i], y_true[i], similarities[i], label_dict,prefix=f"mul_{i}")
 
 
 def single_train(args):
@@ -184,5 +184,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("Hyperbolic Hierarchical Clustering.")
     parser = add_flags_from_config(parser, config_args)
     args = parser.parse_args()
-    single_train(args)
+    multi_train(args,num_groups=5)
 
