@@ -15,7 +15,7 @@ import copy
 import optim
 from config import config_args
 from datasets.hc_dataset import HCDataset
-from datasets.loading import load_data
+from datasets.loading import load_data, load_hypbc_multi_group
 from datasets.loading import load_hypbc
 from model.hyphc import HypHC
 from utils.metrics import dasgupta_cost
@@ -32,10 +32,10 @@ class Objective(object):
 
         #set all config hyperparams
         #general
-        optim_args.epochs = trial.suggest_int("epochs",1,50,step=5)
+        optim_args.epochs = trial.suggest_int("epochs",1,10,step=2)
         batch_size_power = trial.suggest_int("batch_size_power",6,9)
         optim_args.batch_size = 2**batch_size_power  # 64-512
-        optim_args.learning_rate = trial.suggest_float("learning_rate",1e-5,1,log=True)# logscale 1e-5 - 1e0
+        optim_args.learning_rate = trial.suggest_float("learning_rate",1e-6,1,log=True)# logscale 1e-5 - 1e0
 
         # model
         optim_args.temperature = trial.suggest_float("temperature",0.1,0.5) # 0.01 - 0.5
@@ -84,15 +84,18 @@ class Objective(object):
             torch.set_default_dtype(torch.float64)
 
         # create dataset
-        if optim_args.dataset == 'breast_cancer':
-            x, y_true, similarities = load_hypbc(type="partial",
-                                                 normalize="none",
-                                                 num_data_samples=optim_args.num_data_samples,
-                                                 feature_dim=optim_args.feature_dim,
-                                                 method=optim_args.similarity_metric,
-                                                 visualize=True)
+        if optim_args.dataset == 'breast_cancer': #TODO: check how to optimize loading all the data each time
+            x_all, y_true_all, similarities_all, label_dict = load_hypbc_multi_group(num_groups=1,
+                                                                         num_data_samples=args.num_data_samples,
+                                                                         feature_dim=args.feature_dim,
+                                                                         method=args.similarity_metric,
+                                                                         feature_correlation_thresh=args.feature_correlation_thresh,
+                                                                         visualize=True)
+            x = x_all[0]
+            y_true = y_true_all[0]
+            similarities = similarities_all[0]
         else:
-            x, y_true, similarities = load_data(optim_args.dataset, data_size=optim_args.num_data_samples)
+            assert (False)
 
         print(similarities.shape)
         print(similarities)
@@ -140,7 +143,7 @@ class Objective(object):
                 model_path = os.path.join(save_dir, f"model_sd{optim_args.seed}_epch{epoch}.pkl")
                 torch.save(model.state_dict(), model_path)
                 img_path = os.path.join(save_dir, f"embedding_sd{optim_args.seed}_epch{epoch}.png")
-                visualize_tree(model, tree, y_true, img_path)
+                visualize_tree(model, tree, y_true, img_path,label_dict)
 
                 cost = dasgupta_cost(tree, similarities)
 
