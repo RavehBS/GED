@@ -1,4 +1,5 @@
 """Configuration parameters."""
+from math import comb
 
 config_args = {
     # training
@@ -11,7 +12,7 @@ config_args = {
     "optimizer": "RAdam",
     "save": 1,
     "fast_decoding": 1,
-    "num_samples": -1,
+    "num_samples": -1, #comb(1000,2),
 
     # model
     "dtype": "double",
@@ -30,3 +31,4 @@ config_args = {
     "feature_dim": 50, #10-20e3 logscale
     "feature_correlation_thresh":0.9 #features that have a correlation of more than this value will be tossed
 }
+label_colors = {'0': 'r', '1': 'g', '2': 'b', '3': 'm','4' : 'y'}

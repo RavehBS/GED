@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import random
+from config import label_colors
 
 from utils.lca import hyp_lca
 
@@ -82,17 +83,13 @@ def is_leaf(tree, node):
     return len(list(tree.neighbors(node))) == 0
 
 
-def plot_tree_from_leaves(ax, tree, leaves_embeddings, labels,label_dict, color_seed=1234):
+def plot_tree_from_leaves(ax, tree, leaves_embeddings, labels,label_dict):
     """Plots a tree on leaves embeddings using the LCA construction."""
     circle = plt.Circle((0, 0), 1.0, color='r', alpha=0.1)
     ax.add_artist(circle)
     n = leaves_embeddings.shape[0]
     embeddings = complete_tree(tree, leaves_embeddings)
-    #colors = get_colors(labels, color_seed)
-    num_of_labels = len(sorted(np.unique(labels)))
-    rng = random.Random(0) #create local random with seed 0 - thus class colors are constant throughout different epochs
-    label_to_color = [(rng.random(),rng.random(),rng.random()) for i in range(num_of_labels)]
-    colors= pltcolor.ListedColormap(label_to_color)
+    colors= pltcolor.ListedColormap(label_colors.values())
     handles = ax.scatter(embeddings[:n, 0], embeddings[:n, 1], c=labels, cmap=colors, s=8, alpha=0.6)
     if label_dict is not None:
         ax.legend(handles = handles.legend_elements()[0], labels = label_dict, loc='upper center', bbox_to_anchor=(0.5, 1.15),ncol=3,fontsize='small')
