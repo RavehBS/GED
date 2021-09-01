@@ -37,7 +37,7 @@ def geodesic_fn(x, y, nb_points=100):
 def plot_geodesic(x, y, ax):
     """Plots geodesic between x and y."""
     points = geodesic_fn(x, y)
-    ax.plot(points[:, 0], points[:, 1], color='black', linewidth=1.5, alpha=1)
+    ax.plot(points[:, 0], points[:, 1], color='black', linewidth=0.5, alpha=1)
 
 
 def complete_tree(tree, leaves_embeddings):
@@ -93,7 +93,7 @@ def plot_tree_from_leaves(ax, tree, leaves_embeddings, labels,label_dict, color_
     rng = random.Random(0) #create local random with seed 0 - thus class colors are constant throughout different epochs
     label_to_color = [(rng.random(),rng.random(),rng.random()) for i in range(num_of_labels)]
     colors= pltcolor.ListedColormap(label_to_color)
-    handles = ax.scatter(embeddings[:n, 0], embeddings[:n, 1], c=labels, cmap=colors, s=50, alpha=0.6)
+    handles = ax.scatter(embeddings[:n, 0], embeddings[:n, 1], c=labels, cmap=colors, s=8, alpha=0.6)
     if label_dict is not None:
         ax.legend(handles = handles.legend_elements()[0], labels = label_dict, loc='upper center', bbox_to_anchor=(0.5, 1.15),ncol=3,fontsize='small')
     plt.show()
