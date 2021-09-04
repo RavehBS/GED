@@ -6,4 +6,5 @@ tqdm==4.31.1
 pandas==1.2.3
 scipy==1.6.1
 optuna==2.8
-matplotlib
+matplotlib==2.2.3
+scikit-network==0.24.0
