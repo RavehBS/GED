@@ -38,7 +38,7 @@ class Objective(object):
         optim_args.epochs = trial.suggest_int("epochs",1,60,step=3)
         batch_size_power = trial.suggest_int("batch_size_power",6,9)
         optim_args.batch_size = 2**batch_size_power  # 64-512
-        optim_args.learning_rate = trial.suggest_float("learning_rate",1e-50,1e-2,log=True)# logscale 1e-5 - 1e0
+        optim_args.learning_rate = trial.suggest_float("learning_rate",1e-5,1e-2,log=True)# logscale 1e-5 - 1e0
 
         # model
         optim_args.temperature = trial.suggest_float("temperature",0.001,0.2) # 0.01 - 0.5
