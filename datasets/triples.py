@@ -56,7 +56,7 @@ def init_sum_of_triangular_series(n):
     sk = [np.uint(i*(i+1)*(i+2)/6) for i in range(n-1)]
     return sk
 
-def ini_triangular_series(n):
+def init_triangular_series(n):
     sk = [np.uint(i*(i+1)/2) for i in range(n-1)]
     return sk
 
@@ -89,11 +89,11 @@ def find_3rd_bit(rel_idx,bit2,n):
 def find_triplet_by_idx(idx,n):
     sk1=init_sum_of_triangular_series(n)
     assert(sk1[-1] > idx) #check idx required is valid
-    sk2=ini_triangular_series(n)
+    sk2=init_triangular_series(n)
     bit1,diff1 = find_1st_bit(idx,n,sk1)
     bit2,diff2 = find_2nd_bit(idx-diff1,bit1,n,sk2)
     bit3 = find_3rd_bit(idx-diff1-diff2,bit2,n)
-    return(bit1,bit2,bit3)
+    return np.array([bit1,bit2,bit3])
 
 if __name__ == "__main__":
     N = 20
