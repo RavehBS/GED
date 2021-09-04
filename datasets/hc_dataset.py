@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import torch
 import torch.utils.data as data
-
+from math import comb
 
 #from datasets.triples import generate_all_triples, samples_triples, init_SK
 import datasets.triples as triplets
@@ -26,13 +26,22 @@ class HCDataset(data.Dataset):
         self.labels = labels
         self.similarities = similarities
         self.n_nodes = self.similarities.shape[0]
-        #SK is series of sum of traingular series.
-        self.sum_of_triangular_series = triplets.init_sum_of_triangular_series(self.n_nodes)
-        self.triangular_series = triplets.ini_triangular_series(self.n_nodes)
-        #self.triples = self.generate_triples(num_samples) #This clogs up the memory
+        self.num_samples = num_samples
+        self.generate_triplets_on_the_fly = generate_triplets_on_the_fly
+        if generate_triplets_on_the_fly:
+            assert (num_samples < 2) #generating on the fly is possible only when generating all the possible triplets.
+            #SK is series of sum of traingular series.
+            self.sum_of_triangular_series = triplets.init_sum_of_triangular_series(self.n_nodes)
+            self.triangular_series = triplets.ini_triangular_series(self.n_nodes)
+            self.triples = None
+        else:
+            self.triples = self.generate_triples(num_samples)
 
     def __len__(self):
-        return len(self.triples)
+        if self.generate_triplets_on_the_fly:
+            return comb(self.n_nodes, 3)
+        else:
+            return len(self.triples)
 
     def __getitem__(self, idx):
 
@@ -46,8 +55,8 @@ class HCDataset(data.Dataset):
     def generate_triples(self, num_samples):
         logging.info("Generating triples.")
         if num_samples < 0:
-            triples = generate_all_triples(self.n_nodes)
+            triples = triplets.generate_all_triples(self.n_nodes)
         else:
-            triples = samples_triples(self.n_nodes, num_samples=num_samples)
+            triples = triplets.samples_triples(self.n_nodes, num_samples=num_samples)
         logging.info(f"Total of {triples.shape[0]} triples")
         return triples.astype("int64")
