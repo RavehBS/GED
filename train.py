@@ -185,5 +185,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("Hyperbolic Hierarchical Clustering.")
     parser = add_flags_from_config(parser, config_args)
     args = parser.parse_args()
-    multi_train(args,num_groups=5)
+    single_train(args)
 
