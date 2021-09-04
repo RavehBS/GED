@@ -7,14 +7,13 @@ import torch
 import torch.utils.data as data
 from math import comb
 
-#from datasets.triples import generate_all_triples, samples_triples, init_SK
 import datasets.triples as triplets
 
 
 class HCDataset(data.Dataset):
     """Hierarchical clustering dataset."""
 
-    def __init__(self, features, labels, similarities, num_samples):
+    def __init__(self, features, labels, similarities, num_samples,generate_triplets_on_the_fly = False):
         """Creates Hierarchical Clustering dataset with triples.
 
         @param labels: ground truth labels
@@ -44,8 +43,10 @@ class HCDataset(data.Dataset):
             return len(self.triples)
 
     def __getitem__(self, idx):
-
-        triple = self.triples[idx] #TODO: generate triplets (triplet in the idx place)
+        if self.generate_triplets_on_the_fly:
+            triple = triplets.find_triplet_by_idx(idx, self.n_nodes)
+        else:
+            triple = self.triples[idx]
         s12 = self.similarities[triple[0], triple[1]]
         s13 = self.similarities[triple[0], triple[2]]
         s23 = self.similarities[triple[1], triple[2]]
@@ -54,6 +55,7 @@ class HCDataset(data.Dataset):
 
     def generate_triples(self, num_samples):
         logging.info("Generating triples.")
+        assert (self.generate_triplets_on_the_fly is False)
         if num_samples < 0:
             triples = triplets.generate_all_triples(self.n_nodes)
         else:
