@@ -11,6 +11,8 @@ import optuna
 import joblib
 from datetime import  datetime
 import copy
+from math import comb
+
 
 import optim
 from config import config_args
@@ -22,6 +24,7 @@ from utils.metrics import dasgupta_cost
 from utils.training import add_flags_from_config, get_savedir
 from visualize import visualize_tree
 
+
 class Objective(object):
     def __init__(self, args):
         # Hold this implementation specific arguments as the fields of the class.
@@ -32,16 +35,16 @@ class Objective(object):
 
         #set all config hyperparams
         #general
-        optim_args.epochs = trial.suggest_int("epochs",1,10,step=2)
+        optim_args.epochs = trial.suggest_int("epochs",1,60,step=3)
         batch_size_power = trial.suggest_int("batch_size_power",6,9)
         optim_args.batch_size = 2**batch_size_power  # 64-512
-        optim_args.learning_rate = trial.suggest_float("learning_rate",1e-6,1,log=True)# logscale 1e-5 - 1e0
+        optim_args.learning_rate = trial.suggest_float("learning_rate",1e-50,1e-2,log=True)# logscale 1e-5 - 1e0
 
         # model
-        optim_args.temperature = trial.suggest_float("temperature",0.1,0.5) # 0.01 - 0.5
+        optim_args.temperature = trial.suggest_float("temperature",0.001,0.2) # 0.01 - 0.5
         optim_args.init_size = trial.suggest_float("init_size",0.01,0.1) # 0.01-0.1
         optim_args.anneal_every = trial.suggest_int("anneal_every",10,100)
-        optim_args.anneal_factor = ("anneal_factor",0.5,1.0) # 0.1-1.0
+        optim_args.anneal_factor = ("anneal_factor",0.7,1.0) # 0.1-1.0
 
         # dataset
         optim_args.similarity_metric = trial.suggest_categorical("similarity_metric",['cosine','euclidean','mahalanobis','cityblock'])
@@ -90,16 +93,18 @@ class Objective(object):
                                                                          feature_dim=args.feature_dim,
                                                                          method=args.similarity_metric,
                                                                          feature_correlation_thresh=args.feature_correlation_thresh,
-                                                                         visualize=True)
+                                                                         visualize=False)
             x = x_all[0]
             y_true = y_true_all[0]
             similarities = similarities_all[0]
         else:
-            assert (False)
+            assert(False)
 
         print(similarities.shape)
         print(similarities)
-        dataset = HCDataset(x, y_true, similarities, num_samples=optim_args.num_samples)
+
+        actual_num_samples = comb(len(y_true), 2) if optim_args.num_samples < 2 else optim_args.num_samples
+        dataset = HCDataset(x, y_true, similarities, num_samples=actual_num_samples)
         dataloader = data.DataLoader(dataset, batch_size=optim_args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
 
         # Generate the model.
