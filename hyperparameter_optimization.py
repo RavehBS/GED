@@ -44,7 +44,7 @@ class Objective(object):
         optim_args.temperature = trial.suggest_float("temperature",0.001,0.2) # 0.01 - 0.5
         optim_args.init_size = trial.suggest_float("init_size",0.01,0.1) # 0.01-0.1
         optim_args.anneal_every = trial.suggest_int("anneal_every",10,100)
-        optim_args.anneal_factor = ("anneal_factor",0.7,1.0) # 0.1-1.0
+        optim_args.anneal_factor = trial.suggest_float("anneal_factor",0.7,1.0) # 0.1-1.0
 
         # dataset
         optim_args.similarity_metric = trial.suggest_categorical("similarity_metric",['cosine','euclidean','mahalanobis','cityblock'])
