@@ -47,7 +47,7 @@ class Objective(object):
         optim_args.anneal_factor = trial.suggest_float("anneal_factor",0.7,1.0) # 0.1-1.0
 
         # dataset
-        optim_args.similarity_metric = trial.suggest_categorical("similarity_metric",['cosine','euclidean','mahalanobis','cityblock'])
+        optim_args.similarity_metric = metric_glob
         optim_args.feature_dim = trial.suggest_int("feature_dim", 10,200)  # 10-200
 
         #Init algorithm
@@ -57,7 +57,10 @@ class Objective(object):
         # get saving directory
         # TODO: consider not saving.
         if optim_args.save:
-            save_dir = get_savedir(optim_args) + f"_trial{trial.number}"
+            #save_dir = get_savedir(optim_args) + f"_trial{trial.number}"
+            path_list = list(os.path.split(get_savedir(optim_args)))
+            path_list[1] = f"{metric_glob}_trial{trial.number}_{path_list[1]}"
+            save_dir=os.path.join(*path_list)
             logging.info("Save directory: " + save_dir)
             save_path = os.path.join(save_dir, "model_{}.pkl".format(optim_args.seed))
             if os.path.exists(save_dir):
@@ -105,7 +108,7 @@ class Objective(object):
 
         actual_num_samples = comb(len(y_true), 2) if optim_args.num_samples < 2 else optim_args.num_samples
         dataset = HCDataset(x, y_true, similarities, num_samples=actual_num_samples)
-        dataloader = data.DataLoader(dataset, batch_size=optim_args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
+        dataloader = data.DataLoader(dataset, batch_size=optim_args.batch_size, shuffle=True, num_workers=0, pin_memory=True)
 
         # Generate the model.
         model = HypHC(dataset.n_nodes, optim_args.rank, optim_args.temperature, optim_args.init_size, optim_args.max_scale)
@@ -198,22 +201,25 @@ class Objective(object):
 
         return best_cost
 
-
+metric_glob = ""
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Hyperbolic Hierarchical Clustering.")
     parser = add_flags_from_config(parser, config_args)
     args = parser.parse_args()
+    metric_list = ['cosine','euclidean','mahalanobis','cityblock']
 
-    logger = logging.getLogger()
+    for metric in metric_list:
+        logger = logging.getLogger()
 
-    logger.setLevel(logging.INFO)  # Setup the root logger.
+        logger.setLevel(logging.INFO)  # Setup the root logger.
 
-    hyper_param_log_path = "embeddings/breast_cancer/hyper_param"
-    os.makedirs(hyper_param_log_path,exist_ok=True)
-    logfile = os.path.join(hyper_param_log_path,f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_hyper.log")
-    logger.addHandler(logging.FileHandler(logfile, mode="w"))
+        hyper_param_log_path = "embeddings/breast_cancer/hyper_param"
+        os.makedirs(hyper_param_log_path, exist_ok=True)
+        logfile = os.path.join(hyper_param_log_path,
+                               f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_hyper_" + metric + ".log")
+        logger.addHandler(logging.FileHandler(logfile, mode="w"))
 
-    optuna.logging.enable_propagation()  # Propagate logs to the root logger
+        optuna.logging.enable_propagation()  # Propagate logs to the root logger
 
     sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(study_name="hypbc", direction="minimize", sampler=sampler)
@@ -232,8 +238,8 @@ if __name__ == "__main__":
     for key, value in trial.params.items():
         print(" {}: {}".format(key, value))
 
-    optuna.visualization.plot_param_importances(study)
-    joblib.dump(study, "study.pkl")
+        optuna.visualization.plot_param_importances(study)
+        joblib.dump(study, "study_"+metric+".pkl")
 
 
 
