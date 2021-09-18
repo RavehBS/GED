@@ -1,0 +1,2 @@
+#best cosine
+config_args={"seed": 1234, "epochs": 58, "batch_size": 512, "learning_rate": 0.005412209937418052, "eval_every": 1, "patience": 20, "optimizer": "RAdam", "save": 1, "fast_decoding": 1, "num_samples": -1, "dtype": "double", "rank": 2, "temperature": 0.19501335109063592, "init_size": 0.08534469260950338, "anneal_every": 18, "anneal_factor": 0.9159904542624218, "max_scale": 0.999, "dataset": "breast_cancer", "similarity_metric": "cosine", "num_data_samples": 350, "feature_dim": 103, "feature_correlation_thresh": 0.9}
