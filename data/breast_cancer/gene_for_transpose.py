@@ -1,0 +1,20 @@
+
+#gene_list = [MIA, SFRP1, KRT14, KRT17, KRT5, FGFR4, GRB7, ERBB2, BAG1, MDM2, ACTR3B, BLVRA, CXXC5, TMEM45B, MMP11, FOXC1, EGFR, CDH3, PHGDH, MYC, CCNE1, CDCA1, CDC20, KIF2C, TYMS, KNTC2, UBE2T, MELK, PTTG1, CCNB1, CDC6, MYBL2, BIRC5, CENPF, EXO1, ORC6L, ANLN, UBE2C, RRM2, MKI67, CEP55, PGR, NAT1, SLC39A6, BCL2, ESR1, MAPT, GPR160, MLPH, FOXA1 ]
+
+basal_dict = {"MIA":0, "SFRP1":0, "KRT14":0, "KRT17":0, "KRT5":0,"FGFR4":3, "GRB7":3, "ERBB2":3, "BAG1":3, "MDM2":3, "ACTR3B":2, "BLVRA":3, "CXXC5":3, "TMEM45B":4,"MMP11":3,"FOXC1":1, "EGFR":1, "CDH3":1, "PHGDH":1, "MYC":1, "CCNE1":1, "CDCA1":1, "CDC20":1, "KIF2C":1, "TYMS":1, "KNTC2":1, "UBE2T":1, "MELK":1, "PTTG1":1, "CCNB1":1, "CDC6":1, "MYBL2":1, "BIRC5":1, "CENPF":1, "EXO1":1, "ORC6L":1, "ANLN":1, "UBE2C":1, "RRM2":1, "MKI67":1, "CEP55":1, "PGR":4, "NAT1":4, "SLC39A6":4, "BCL2":4, "ESR1":4, "MAPT":4, "GPR160":4, "MLPH":4, "FOXA1":4}
+
+her2_dict = {"MIA":5, "SFRP1":5, "KRT14":5, "KRT17":5, "KRT5":5,"FGFR4":0, "GRB7":0, "ERBB2":0, "BAG1":2, "MDM2":2, "ACTR3B":2, "BLVRA":2, "CXXC5":2, "TMEM45B":1,"MMP11":5,"FOXC1":5, "EGFR":5, "CDH3":5, "PHGDH":5, "MYC":3, "CCNE1":2, "CDCA1":2, "CDC20":2, "KIF2C":2, "TYMS":2, "KNTC2":2, "UBE2T":2, "MELK":2, "PTTG1":2, "CCNB1":2, "CDC6":1, "MYBL2":1, "BIRC5":1, "CENPF":1, "EXO1":1, "ORC6L":1, "ANLN":1, "UBE2C":1, "RRM2":1, "MKI67":1, "CEP55":1, "PGR":4, "NAT1":4, "SLC39A6":4, "BCL2":4, "ESR1":4, "MAPT":4, "GPR160":2, "MLPH":2, "FOXA1":2}
+
+lumA_dict = {"MIA":5, "SFRP1":5, "KRT14":5, "KRT17":5, "KRT5":5,"FGFR4":5, "GRB7":5, "ERBB2":5, "BAG1":5, "MDM2":5, "ACTR3B":5, "BLVRA":5, "CXXC5":5, "TMEM45B":5,"MMP11":5,"FOXC1":5, "EGFR":5, "CDH3":5, "PHGDH":5, "MYC":5, "CCNE1":1, "CDCA1":1, "CDC20":1, "KIF2C":1, "TYMS":1, "KNTC2":1, "UBE2T":1, "MELK":1, "PTTG1":1, "CCNB1":1, "CDC6":1, "MYBL2":1, "BIRC5":1, "CENPF":1, "EXO1":1, "ORC6L":1, "ANLN":1, "UBE2C":1, "RRM2":1, "MKI67":1, "CEP55":1, "PGR":4, "NAT1":5, "SLC39A6":5, "BCL2":5, "ESR1":5, "MAPT":5, "GPR160":5, "MLPH":5, "FOXA1":5}
+
+lumB_dict = {"MIA":3, "SFRP1":4, "KRT14":4, "KRT17":4, "KRT5":2,"FGFR4":2, "GRB7":2, "ERBB2":2, "BAG1":2, "MDM2":2, "ACTR3B":2, "BLVRA":2, "CXXC5":2, "TMEM45B":5,"MMP11":5,"FOXC1":3, "EGFR":3, "CDH3":3, "PHGDH":3, "MYC":5, "CCNE1":2, "CDCA1":2, "CDC20":2, "KIF2C":2, "TYMS":2, "KNTC2":2, "UBE2T":2, "MELK":2, "PTTG1":2, "CCNB1":2, "CDC6":2, "MYBL2":2, "BIRC5":2, "CENPF":2, "EXO1":2, "ORC6L":2, "ANLN":2, "UBE2C":2, "RRM2":2, "MKI67":2, "CEP55":2, "PGR":0, "NAT1":0, "SLC39A6":0, "BCL2":1, "ESR1":1, "MAPT":1, "GPR160":1, "MLPH":1, "FOXA1":0}
+
+gene_dict_list = [lumA_dict ,lumB_dict ,basal_dict ,her2_dict]
+
+gene_label_dict = ['++','+','-','--','0','Inconclusive']
+# strong red 0
+# weak read 1
+# black 2
+# weak green 3
+# strong green 4
+# inconclusive 5
