@@ -12,7 +12,7 @@ from utils.metrics import dasgupta_cost
 
 
 
-from config import label_colors
+from config_best_of_the_best import label_colors
 
 def graph_from_linkage_mat(linkage_mat):
     n = linkage_mat.shape[0]+1
@@ -63,11 +63,14 @@ linkages = {"WL" : ['ward','euclidean'],
             }
 
 
-X, y_true, similarities, label_dict = load_hypbc_multi_group(num_groups=100,
-                                                             num_data_samples=-1,
-                                                             feature_dim=50,
+X, y_true, similarities, label_dict = load_hypbc_multi_group(num_groups=1,
+                                                             num_data_samples=1699,
+                                                             feature_dim=103,
                                                              method="cosine",
-                                                             feature_correlation_thresh=0.9,                                                             visualize=False)
+                                                             feature_correlation_thresh=0.9,
+                                                             visualize=False,
+                                                             transpose_features = False,
+                                                             patient_type = 'LumB')
 for alg_type,param in linkages.items():
 
     Z = linkage(X[0],method = param[0],metric = param[1])
