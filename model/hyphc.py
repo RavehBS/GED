@@ -75,6 +75,6 @@ class HypHC(nn.Module):
         else:
             parents = sl_from_embeddings(leaves_embeddings, sim_fn)
         tree = nx.DiGraph()
-        for i, j in enumerate(parents[:-1]):
+        for i, j in enumerate(parents[:-1]): #i is the index j is the name
             tree.add_edge(j, i)
         return tree
