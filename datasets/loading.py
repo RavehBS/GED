@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.spatial as sp
 import scipy.io
-from data.breast_cancer.gene_for_transpose import gene_dict_list, gene_label_dict
-
+import random
 
 UCI_DATASETS = [
     "glass",
@@ -152,7 +151,7 @@ def get_d2(data, label, os_time, os_sta, patient_list):
                     returned_os_stat.append(1)
     return returned_data, returned_os_time, returned_os_stat, returned_label, label_dict
 
-def load_hypbc_5_type_metabric():
+def load_hypbc_5_type_metabric(visualize = False, corr_thresh = 0.9,num_features=-1):
     data_path = os.path.join(os.environ["DATAPATH"], "breast_cancer/dataStructMetabric.mat")
 
     mat2 = scipy.io.loadmat(data_path)
@@ -167,35 +166,42 @@ def load_hypbc_5_type_metabric():
     clinData2 = clinic2_info[0, 0]['data'][0][0]
     geneList2 = mat2['dataStructMetabric']['genes'][0][0]
 
-    data2, os_time2, os_stat2, label2, label_dict = get_d2(gene_data2, clinData2[:, 6], clinData2[:, 22], clinData2[:, 23],
+    data2, os_time2, os_stat2, label2,label_dict = get_d2(gene_data2, clinData2[:, 6], clinData2[:, 22], clinData2[:, 23],
                                                patient_list2)
     data2 = np.vstack(data2) #gene expression data, each row is patient
     label2 = np.asarray(label2) #matching cancer types
+    sample_names = [] #patient specific ID
+    feat_names = [] #gene names
 
-    return data2, label2, geneList2, label_dict
 
-def preprocess_data(data, labels, columns_headers, label_dict,
-                    num_features = -1, filter_by_corr = True, corr_thresh = 0.9):
+    data2,label2,geneList2,sample_names, feat_names, label_dict = \
+        preprocess_data(data2,label2,geneList2,sample_names, feat_names, label_dict,
+                    num_features = num_features,filter_by_corr = True,corr_thresh = corr_thresh)
+
+    return data2, label2, sample_names, feat_names, label_dict
+
+def preprocess_data(data,labels,geneList,sample_names, feat_names, label_dict,
+                    num_features = -1,filter_by_corr = True,corr_thresh = 0.9):
 
     data2 = data
     labels2 = labels
-    columns_headers2 = columns_headers
+    geneList2 = geneList
 
     #sort data  by feature variance
     feature_variance = np.var(data2,axis=0)
     sorted_ind = np.flipud(np.argsort(feature_variance)) #sort in descending manner
     sorted_data_by_variance = data2[:,sorted_ind]
-    columns_headers2 = columns_headers2[sorted_ind]
+    geneList2 = geneList2[sorted_ind]
 
     # remove features with constant values
     sorted_feature_variance = feature_variance[sorted_ind]
     non_const_features_ind = np.where(sorted_feature_variance > 0)
     sorted_data_by_variance = np.squeeze(sorted_data_by_variance[:,non_const_features_ind])
-    columns_headers2 = columns_headers2[non_const_features_ind]
+    geneList2 = geneList2[non_const_features_ind]
 
     if num_features > 1:
         sorted_data_by_variance = sorted_data_by_variance[:,:num_features]
-        columns_headers2 = columns_headers2[:num_features]
+        geneList2 = geneList2[:num_features]
 
     if filter_by_corr:
         # remove correlated features
@@ -211,11 +217,9 @@ def preprocess_data(data, labels, columns_headers, label_dict,
         bool_col_to_drop[col_to_drop] = False
         print(bool_col_to_drop)
         filtered_data = sorted_data_by_variance[:,bool_col_to_drop]
-        columns_headers2 = columns_headers2[bool_col_to_drop]
-    else:
-        filtered_data = sorted_data_by_variance
+        geneList2 = geneList2[bool_col_to_drop]
 
-    return filtered_data, labels2, columns_headers2, label_dict
+    return filtered_data, labels2, geneList2,sample_names, feat_names, label_dict
 
 
 
@@ -366,23 +370,14 @@ def choose_one_from_each(data,labels,num_data_samples):
 
 
 
-def load_hypbc(transpose_features=False,
+def load_hypbc(type="partial",
                normalize = "none",
                num_data_samples = -1,
                feature_dim = 50,
                method = "cosine",
                feature_correlation_thresh = 0.9,
                visualize=False):
-    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric(num_features=feature_dim,
-                                                                                  corr_thresh=feature_correlation_thresh,
-                                                                                  visualize=visualize,
-                                                                                  transpose_features = transpose_features)
-
-    sample_names = [] #patient specific ID
-    feat_names = [] #gene names
-    data2,label2,geneList2,sample_names, feat_names, label_dict = \
-        preprocess_data(data,labels,feat_names,sample_names, feat_names, label_dict,
-                    num_features = feature_dim,filter_by_corr = True,corr_thresh = feature_correlation_thresh)
+    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric(num_features=feature_dim, corr_thresh=feature_correlation_thresh,visualize=visualize)
     # data, labels, feat_names, samp_names, label_dict = load_hypbc_data_deprecated(type=type,
     #                                                                               normalize=normalize,
     #                                                                               visualize=visualize)
@@ -401,48 +396,10 @@ def load_hypbc_multi_group(num_data_samples = -1,
                feature_dim = 50,
                method = "cosine",
                feature_correlation_thresh = 0.9,
-               visualize=False,
-               transpose_features = True,
-               patient_type = 'Basal'):
-    data, labels, feat_names, label_dict = load_hypbc_5_type_metabric()
-
-    if transpose_features: #need to perform mor loading actions
-        #take only patients with certain type of breast cancer
-        patient_label_to_take = np.where(np.array(label_dict) == patient_type)[0][0]
-        data = data[np.where(labels == patient_label_to_take),:]
-
-        #transpose the data
-        data = data.T.squeeze()
-
-        #recall that feat_names is the name of the genes. match the labels from the given labels file.
-        labels = [gene_dict_list[patient_label_to_take].get(gene[0]) for gene in feat_names.squeeze()]
-        label_dict = gene_label_dict #['++','+','-','--','0','Inconclusive']
-
-        #remove genes without any label
-        viable_genes_indices = np.where(~(np.asarray(labels) == None))[0]
-        data = data[viable_genes_indices,:]
-        labels = np.asarray(labels)[viable_genes_indices]
-        feat_names = np.asarray(range(data.shape[1])) #set feature names to just the patient index
-
-        #preprocess for the transposed
-        data, labels, columns_headers2, label_dict = \
-            preprocess_data(data=data,
-                            labels=labels,
-                            columns_headers=feat_names,
-                            label_dict=label_dict,
-                            num_features=-1,
-                            filter_by_corr=False,
-                            corr_thresh=feature_correlation_thresh)
-    else:
-        #preprocess normal
-        data, labels, columns_headers2, label_dict = \
-            preprocess_data(data=data,
-                            labels = labels,
-                            columns_headers=feat_names,
-                            label_dict=label_dict,
-                            num_features=feature_dim,
-                            filter_by_corr=True,
-                            corr_thresh=feature_correlation_thresh)
+               visualize=False):
+    data, labels, feat_names, samp_names, label_dict = load_hypbc_5_type_metabric(num_features=feature_dim,
+                                                                                  corr_thresh=feature_correlation_thresh,
+                                                                                  visualize=visualize)
 
     # decide on data group size
     n = len(labels) if num_data_samples == -1 else num_data_samples

@@ -1,2 +1,0 @@
-#best mahalanobis
-config_args={"seed": 1234, "epochs": 16, "batch_size": 128, "learning_rate": 0.00030033617880827207, "eval_every": 1, "patience": 20, "optimizer": "RAdam", "save": 1, "fast_decoding": 1, "num_samples": -1, "dtype": "double", "rank": 2, "temperature": 0.12232099189914747, "init_size": 0.027800984609619793, "anneal_every": 64, "anneal_factor": 0.9651707721593057, "max_scale": 0.999, "dataset": "breast_cancer", "similarity_metric": "mahalanobis", "num_data_samples": 350, "feature_dim": 181, "feature_correlation_thresh": 0.9}
