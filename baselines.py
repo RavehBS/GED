@@ -3,7 +3,7 @@ import os
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 from scipy.cluster.hierarchy import dendrogram
-from datasets.loading import load_hypbc_multi_group
+from datasets.loading import load_hypbc_multi_group, load_data
 from time import gmtime, strftime
 import matplotlib
 from scipy.cluster.hierarchy import linkage
@@ -12,7 +12,7 @@ from utils.metrics import dasgupta_cost
 
 
 
-from config import label_colors
+from config_best_of_the_best import label_colors
 
 def graph_from_linkage_mat(linkage_mat):
     n = linkage_mat.shape[0]+1
@@ -36,7 +36,7 @@ def plot_dendrogram(linkage_matrix,similarity_mat, **kwargs):
     # Plot the corresponding dendrogram
     matplotlib.rcParams['lines.linewidth'] = 0.5
     fig = plt.figure()
-    dnd=dendrogram(linkage_matrix,link_color_func =lambda x: 'k',**kwargs)
+    dnd=dendrogram(linkage_matrix,link_color_func =lambda x: 'k',leaf_rotation=0,truncate_mode='level',p=30,**kwargs)
 
 
     #calculate dasgupta cost
@@ -53,6 +53,11 @@ def plot_dendrogram(linkage_matrix,similarity_mat, **kwargs):
 
     plt.show()
 
+
+
+
+### start main
+
 res_dir = 'baseline_results'
 os.makedirs(res_dir,exist_ok=True) #save results here
 
@@ -62,18 +67,30 @@ linkages = {"WL" : ['ward','euclidean'],
             "CL" : ['complete','cosine']
             }
 
-
-X, y_true, similarities, label_dict = load_hypbc_multi_group(num_groups=100,
-                                                             num_data_samples=-1,
-                                                             feature_dim=50,
+"""
+X, y_true, similarities, label_dict = load_hypbc_multi_group(num_groups=1,
+                                                             num_data_samples=1699,
+                                                             feature_dim=103,
                                                              method="cosine",
-                                                             feature_correlation_thresh=0.9,                                                             visualize=False)
+                                                             feature_correlation_thresh=0.9,
+                                                             visualize=False,
+                                                             transpose_features = False,
+                                                             patient_type = 'LumB')
+                                                             
+X = X[0]
+y_true = y[0]
+similaritites = similarities[0]
+label_dict = label_dict
+"""
+X, y_true, similarities, label_dict = load_data(dataset='zoo')
+
+
 for alg_type,param in linkages.items():
 
-    Z = linkage(X[0],method = param[0],metric = param[1])
+    Z = linkage(X,method = param[0],metric = param[1])
 
     # plot the top three levels of the dendrogram
-    plot_dendrogram(Z,similarities[0],labels = y_true[0])
+    plot_dendrogram(Z,similarities,labels = y_true)
     plt.xlabel("Bar color represents actual label for each leaf")
 
     legend_handles = []
