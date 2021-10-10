@@ -1,2 +1,0 @@
-#best euclidean
-config_args={"seed": 1234, "epochs": 10, "batch_size": 256, "learning_rate": 0.007544168226599903, "eval_every": 1, "patience": 20, "optimizer": "RAdam", "save": 1, "fast_decoding": 1, "num_samples": -1, "dtype": "double", "rank": 2, "temperature": 0.13032087006908868, "init_size": 0.07818818557413963, "anneal_every": 92, "anneal_factor": 0.8770505029744088, "max_scale": 0.999, "dataset": "breast_cancer", "similarity_metric": "euclidean", "num_data_samples": 350, "feature_dim": 135, "feature_correlation_thresh": 0.9}
