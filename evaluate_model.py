@@ -22,9 +22,9 @@ os.makedirs("tmp", exist_ok=True)
 
 
 
-model_path = "/home/raveh.be@staff.technion.ac.il/PycharmProjects/GED/embeddings/breast_cancer/best_mahalanobis_full/model_sd1234_epch15.pkl"
-save_path = "tmp/best_mahalanobis.png"
-feature_dim = 181
+#model_path = "/home/raveh.be@staff.technion.ac.il/PycharmProjects/GED/embeddings/breast_cancer/best_mahalanobis_full/model_sd1234_epch15.pkl"
+#save_path = "tmp/best_mahalanobis.png"
+#feature_dim = 181
 
 
 
@@ -34,9 +34,9 @@ feature_dim = 181
 
 
 
-#model_path = "/home/raveh.be@staff.technion.ac.il/PycharmProjects/GED/embeddings/breast_cancer/best_euclidean_full/model_sd1234_epch9.pkl"
-#save_path = "tmp/best_euclidean.png"
-#feature_dim = 135
+model_path = "/home/raveh.be@staff.technion.ac.il/PycharmProjects/GED/embeddings/breast_cancer/best_euclidean_full/model_sd1234_epch9.pkl"
+save_path = "tmp/best_euclidean.png"
+feature_dim = 135
 
 
 
@@ -132,7 +132,7 @@ def calculate_misclassification(model_path, save_path, feature_dim):
                 new_hist[basal_idx] = histograms[node,basal_idx]
                 her2_idx = label_dict.index('Her2')
                 new_hist[her2_idx] = histograms[node,her2_idx]
-                new_hist[-1] = sum(histograms[node]) - her2_cnt - basal_cnt #index is a label that doesn't exist, so this is a mismatch
+                new_hist[-1] = sum(histograms[node]) - new_hist[her2_idx] - new_hist[basal_idx] #index is a label that doesn't exist, so this is a mismatch
                 return np.argmax(new_hist)
         else: #we dont have histogram, need to find it
             histograms[node] = get_histogram(node)
@@ -183,7 +183,7 @@ def calculate_misclassification(model_path, save_path, feature_dim):
     misclassification_rate = mismatch_counter['normal']/n
     hit_classification_rate = match_counter['normal']/n
     print(f'general mis-classification_rate is : {misclassification_rate}'
-          f'hit rate is: {hit_classification_rate}')
+          f' hit rate is: {hit_classification_rate}')
     #bas vs her2
     uniques ,counts = np.unique(y_true[0],return_counts=True)
     basal_cnt = counts[np.where(uniques == basal_idx)[0][0]] if np.where(uniques == basal_idx)[0].size>0 else 0
@@ -192,36 +192,34 @@ def calculate_misclassification(model_path, save_path, feature_dim):
     bas_her2_mismatch_rate = mismatch_counter['bas_her2']/n_bas_her2
     bas_her2_match_rate = match_counter['bas_her2']/n_bas_her2
     print(f'basal vs Her2 mis-clasification rate is: {bas_her2_mismatch_rate}'
-          f'hit rate: {bas_her2_match_rate}')
+          f' hit rate: {bas_her2_match_rate}')
+
+
+def visualize_tree_from_pkl(model_path, save_path, feature_dim):
+
+    method = 'euclidean' #doesn't really matter
+    ##########
+    model = None #load model
+    with open(model_path,'rb') as f:
+        #model = torch.load(f)
+        model = HypHC(n_nodes=num_data_samples)
+        model.load_state_dict(torch.load(f))
+    tree = model.decode_tree(fast_decoding=True) # tree is digraph
+
+
+    #first n in tree are the leaves, ordered in the same way as the labels
+    #because we load the data the same way as in the training
+    x, y_true, similarities, label_dict = load_hypbc_multi_group(num_groups=1,
+                                                                     num_data_samples=num_data_samples,
+                                                                     feature_dim=feature_dim,
+                                                                     method=method,
+                                                                     feature_correlation_thresh=feature_correlation_thresh,
+                                                                     visualize=False)
 
 
 
+    visualize_tree(model,tree,y_true[0], save_path,label_dict)
 
+#################################MAIN#######################
+calculate_misclassification(model_path,save_path,feature_dim)
 
-
-#calculate_misclassification(model_path,save_path,feature_dim)
-
-### visualize tree
-
-method = 'euclidean' #doesn't really matter
-##########
-model = None #load model
-with open(model_path,'rb') as f:
-    #model = torch.load(f)
-    model = HypHC(n_nodes=num_data_samples)
-    model.load_state_dict(torch.load(f))
-tree = model.decode_tree(fast_decoding=True) # tree is digraph
-
-
-#first n in tree are the leaves, ordered in the same way as the labels
-#because we load the data the same way as in the training
-x, y_true, similarities, label_dict = load_hypbc_multi_group(num_groups=1,
-                                                                 num_data_samples=num_data_samples,
-                                                                 feature_dim=feature_dim,
-                                                                 method=method,
-                                                                 feature_correlation_thresh=feature_correlation_thresh,
-                                                                 visualize=False)
-
-
-
-visualize_tree(model,tree,y_true[0], save_path,label_dict)
