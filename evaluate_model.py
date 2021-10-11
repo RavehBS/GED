@@ -122,9 +122,18 @@ def calculate_misclassification(model_path, save_path, feature_dim):
 
         return histograms[node]
 
-    def get_label(node):
+    def get_label(node, count_type='normal'):
         if any(histograms[node] > 0): #then we already have a histogram
-            return np.argmax(histograms[node])
+            if count_type== 'normal':
+                return np.argmax(histograms[node])
+            elif count_type== 'bas_her2':
+                new_hist = np.zeros(len(label_dict)+1)
+                basal_idx = label_dict.index('Basal')
+                new_hist[basal_idx] = histograms[node,basal_idx]
+                her2_idx = label_dict.index('Her2')
+                new_hist[her2_idx] = histograms[node,her2_idx]
+                new_hist[-1] = sum(histograms[node]) - her2_cnt - basal_cnt #index is a label that doesn't exist, so this is a mismatch
+                return np.argmax(new_hist)
         else: #we dont have histogram, need to find it
             histograms[node] = get_histogram(node)
             return np.argmax(histograms[node])
@@ -139,34 +148,51 @@ def calculate_misclassification(model_path, save_path, feature_dim):
 
         assert False
 
-    #calculate the missclassification rate
-    mismatch_counter = 0.0
-    bas_her2_mismatch = 0.0
-    for node in tree:
-        if node >= n: #then this node is not a leaf. no need to calculate its familiarity
-            continue
-        brother = get_brother(node)
-        cur_node_label = get_label(node)
-        brother_node_label = get_label(brother)
-        if  cur_node_label != brother_node_label:
-            if (label_dict[cur_node_label] == 'Basal' and label_dict[brother_node_label] == 'Her2') or \
-               (label_dict[cur_node_label] == 'Her2' and label_dict[brother_node_label] == 'Basal'):
-                bas_her2_mismatch += 1.0
-            mismatch_counter += 1.0
-        else:
-            continue
-
-    misclassification_rate = mismatch_counter/n
-    print(f'misclassification_rate is : {misclassification_rate}')
-    
-    uniques ,counts = np.unique(y_true[0],return_counts=True)
     basal_idx = label_dict.index('Basal')
     her2_idx = label_dict.index('Her2')
+
+    #calculate the classification rates
+    mismatch_counter = {}
+    match_counter = {}
+
+    for stats_type in ['normal', 'bas_her2']:
+        mismatch_counter[stats_type] = 0.0
+        match_counter[stats_type] = 0.0
+        #bas_her2_mismatch = 0.0
+        #bas_her2_match_counter = 0.0
+
+        for node in tree:
+            if node >= n: #then this node is not a leaf. no need to calculate its familiarity
+                continue
+            cur_node_label = get_label(node, count_type=stats_type)
+            if stats_type=='bas_her2' and cur_node_label not in [basal_idx,her2_idx]: #dont count stats for nodes not bas or her2 on this mode
+                continue
+            brother = get_brother(node)
+            brother_node_label = get_label(brother,count_type=stats_type)
+            if  cur_node_label != brother_node_label: #different label
+                #if (label_dict[cur_node_label] == 'Basal' and label_dict[brother_node_label] == 'Her2') or \
+                #   (label_dict[cur_node_label] == 'Her2' and label_dict[brother_node_label] == 'Basal'):
+                #    bas_her2_mismatch += 1.0
+                mismatch_counter[stats_type] += 1.0
+            else: #same label
+                match_counter[stats_type] += 1.0
+                #if label_dict[cur_node_label] == 'Basal' or label_dict[cur_node_label] == 'Her2':
+                #    bas_her2_match_counter += 1.0
+
+    #normal
+    misclassification_rate = mismatch_counter['normal']/n
+    hit_classification_rate = match_counter['normal']/n
+    print(f'general mis-classification_rate is : {misclassification_rate}'
+          f'hit rate is: {hit_classification_rate}')
+    #bas vs her2
+    uniques ,counts = np.unique(y_true[0],return_counts=True)
     basal_cnt = counts[np.where(uniques == basal_idx)[0][0]] if np.where(uniques == basal_idx)[0].size>0 else 0
     her2_cnt = counts[np.where(uniques == her2_idx)[0][0]]   if np.where(uniques == her2_idx)[0].size>0 else 0
     n_bas_her2 =  basal_cnt + her2_cnt
-    bas_her2_mismatch_rate = bas_her2_mismatch/n_bas_her2
-    print(f'basal vs Her2 missclasification rate is: {bas_her2_mismatch_rate}')
+    bas_her2_mismatch_rate = mismatch_counter['bas_her2']/n_bas_her2
+    bas_her2_match_rate = match_counter['bas_her2']/n_bas_her2
+    print(f'basal vs Her2 mis-clasification rate is: {bas_her2_mismatch_rate}'
+          f'hit rate: {bas_her2_match_rate}')
 
 
 
